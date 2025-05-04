@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - F1 Telemetry{% endblock %}
+
+{% block content %}
+<section class="intro">
+    <h2>F1 Telemetry Analysis System</h2>
+    <p>Welcome to the Formula 1 Telemetry Analysis System. Explore the data and visualize statistics about races, drivers, and teams.</p>
+</section>
+
+<section class="features">
+    <article>
+        <h3>Data Visualization</h3>
+        <p>Explore data about F1 events, drivers, and teams.</p>
+        <a href="{% url 'f1_dashboard:visualization' %}" class="button">Visualize Data</a>
+    </article>
+
+    <article>
+        <h3>Race Analysis</h3>
+        <p>Analyze race data including lap times, speeds, and other statistics.</p>
+        {% if user.is_authenticated and user.is_team_member %}
+            <a href="{% url 'f1_analysis:race' %}" class="button">Analyze Race</a>
+        {% else %}
+            <div class="restricted">
+                <span class="button disabled">Restricted Access</span>
+                <small>Only team members have access to this feature.</small>
+            </div>
+        {% endif %}
+    </article>
+
+    <article>
+        <h3>Qualifying Analysis</h3>
+        <p>Analyze qualifying data and compare driver performances.</p>
+        {% if user.is_authenticated and user.is_team_member %}
+            <a href="{% url 'f1_analysis:qualifying' %}" class="button">Analyze Qualifying</a>
+        {% else %}
+            <div class="restricted">
+                <span class="button disabled">Restricted Access</span>
+                <small>Only team members have access to this feature.</small>
+            </div>
+        {% endif %}
+    </article>
+</section>
+{% endblock %}

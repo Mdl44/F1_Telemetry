@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Formula 1 Drivers - F1 Telemetry{% endblock %}
+
+{% block content %}
+<section class="driver-view">
+    <div class="header">
+        <h2>Formula 1 Drivers</h2>
+        <a href="{% url 'f1_dashboard:visualization' %}" class="button">Back to Visualization</a>
+    </div>
+
+    <div class="year-filter">
+        <form method="get" action="{% url 'f1_dashboard:driver_view' %}">
+            <label for="year">Season:</label>
+            <select id="year" name="year" onchange="this.form.submit()">
+                {% for year in available_years %}
+                <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <p class="description">Current drivers competing in the {{ selected_year }} Formula 1 World Championship.</p>
+
+    <div class="teams-container">
+        {% for team in teams %}
+        <div class="team-section" data-team-id="{{ team.team_id }}">
+            <div class="team-header">
+                <h3>{{ team.team_name }}</h3>
+                <span class="team-code">{{ team.team_code }}</span>
+            </div>
+
+            <div class="drivers-grid">
+                {% for driver in team.drivers %}
+                <div class="driver-card">
+                    <div class="driver-number">{{ driver.number }}</div>
+                    <div class="driver-info">
+                        <div class="driver-name-code">
+                            <span class="driver-code">{{ driver.driver_code }}</span>
+                            <h4>{{ driver.full_name }}</h4>
+                        </div>
+                        <div class="driver-details">
+                            <p><strong>Country:</strong> {{ driver.country }}</p>
+                            {% if driver.age %}
+                            <p><strong>Age:</strong> {{ driver.age }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

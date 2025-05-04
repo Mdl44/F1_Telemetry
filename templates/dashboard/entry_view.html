@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}Race Entries - F1 Telemetry{% endblock %}
+
+{% block content %}
+<section class="entry-view">
+    <div class="header">
+        <h2>Race Entries</h2>
+        <a href="{% url 'f1_dashboard:visualization' %}" class="button">Back to Visualization</a>
+    </div>
+
+    <div class="filters">
+        <form method="get" action="{% url 'f1_dashboard:entry_view' %}" class="filter-form">
+            <div class="filter-group">
+                <label for="year">Season:</label>
+                <select id="year" name="year" onchange="this.form.submit()">
+                    {% for year in available_years %}
+                    <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="event_id">Grand Prix:</label>
+                <select id="event_id" name="event_id" onchange="this.form.submit()">
+                    {% for event in events %}
+                    <option value="{{ event.event_id }}" {% if event.event_id == selected_event %}selected{% endif %}>
+                        {{ event.event_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+
+    {% if event_info %}
+    <div class="event-info">
+        <h3>{{ event_info.event_name }}</h3>
+        <div class="event-details">
+            <p><strong>Circuit:</strong> {{ event_info.circuit_name }}</p>
+            <p><strong>Location:</strong> {{ event_info.location }}, {{ event_info.country }}</p>
+            <p><strong>Date:</strong> {{ event_info.event_date|date:"F j, Y" }}</p>
+        </div>
+    </div>
+
+    <div class="entries-container">
+        <h3>Participating Drivers</h3>
+        <div class="entries-grid">
+            {% for entry in entries %}
+            <div class="driver-entry" data-team-id="{{ entry.team_id }}">
+                <div class="driver-number">{{ entry.number }}</div>
+                <div class="driver-info">
+                    <div class="driver-name-code">
+                        <span class="driver-code">{{ entry.driver_code }}</span>
+                        <h4>{{ entry.driver_name }}</h4>
+                    </div>
+                    <div class="team-name">{{ entry.team_name }}</div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="no-entries">
+                <p>No entries found for this event.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="no-event">
+        <p>Please select an event to view entries.</p>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Vizualizare Date - F1 Telemetry{% endblock %}
+
+{% block content %}
+<section class="visualization-intro">
+    <h2>F1 Data Visualization</h2>
+    <p>Access the database tables to view information about Formula 1.</p>
+</section>
+
+<section class="data-tables">
+    <h3>Database Tables</h3>
+    <div class="table-buttons">
+        <a href="{% url 'f1_dashboard:team_view' %}" class="button">Teams</a>
+        <a href="{% url 'f1_dashboard:driver_view' %}" class="button">Drivers</a>
+        <a href="{% url 'f1_dashboard:event_view' %}" class="button">Calendar</a>
+        <a href="{% url 'f1_dashboard:entry_view' %}" class="button">Race Entries</a>
+        <a href="{% url 'f1_dashboard:telemetry_view' %}" class="button">Telemetry</a>
+        <a href="{% url 'f1_dashboard:qualifying_analysis_view' %}" class="button">Qualifying Analysis</a>
+        <a href="{% url 'f1_dashboard:race_analysis_view' %}" class="button">Race Analysis</a>
+    </div>
+</section>
+{% endblock %}

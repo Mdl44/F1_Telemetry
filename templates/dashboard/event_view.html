@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Formula 1 Calendar - F1 Telemetry{% endblock %}
+
+{% block content %}
+<section class="event-view">
+    <div class="header">
+        <h2>Formula 1 Calendar</h2>
+        <a href="{% url 'f1_dashboard:visualization' %}" class="button">Back to Visualization</a>
+    </div>
+
+    <div class="year-filter">
+        <form method="get" action="{% url 'f1_dashboard:event_view' %}">
+            <label for="year">Season:</label>
+            <select id="year" name="year" onchange="this.form.submit()">
+                {% for year in available_years %}
+                <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <p class="description">Complete calendar for the {{ selected_year }} Formula 1 World Championship.</p>
+
+    <div class="calendar-container">
+        {% for event in events %}
+        <div class="event-card">
+            <div class="event-date">
+                {{ event.event_date|date:"d M" }}
+            </div>
+
+            <div class="event-details">
+                <h3 class="event-name">{{ event.event_name }}</h3>
+                <div class="event-location">
+                    <div class="circuit-info">
+                        <span class="circuit-name">{{ event.circuit_name }}</span>
+                        <span class="location">{{ event.location }}, {{ event.country }}</span>
+                    </div>
+                </div>
+
+                <div class="event-sessions">
+                    {% for session in event.sessions %}
+                    <div class="session-item {% if session.session_type == 'R' %}race-session{% endif %}">
+                        <span class="session-type">{{ session.type_display }}</span>
+                        <span class="session-date">{{ session.session_date|date:"D d M H:i" }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="driver-count">
+                    <span>{{ event.driver_count }} drivers</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Formula 1 Teams - F1 Telemetry{% endblock %}
+
+{% block content %}
+<section class="team-view">
+    <div class="header">
+        <h2>Formula 1 Teams</h2>
+        <a href="{% url 'f1_dashboard:visualization' %}" class="button">Back to Visualization</a>
+    </div>
+
+    <div class="filters">
+        <form method="get" action="{% url 'f1_dashboard:team_view' %}" class="filter-form">
+            <div class="filter-group">
+                <label for="year">Season:</label>
+                <select id="year" name="year" onchange="this.form.submit()">
+                    {% for year in available_years %}
+                    <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+
+    <p class="description">Teams competing in the {{ selected_year }} Formula 1 World Championship.</p>
+
+    <div class="teams-grid">
+        {% for team in teams %}
+        <div class="team-card" data-team-id="{{ team.team_id }}">
+            <div class="team-header">
+                <h3>{{ team.team_name }}</h3>
+                <span class="team-code">{{ team.team_code }}</span>
+            </div>
+            <div class="team-body">
+                <h4>Drivers</h4>
+                <ul class="drivers-list">
+                    {% for driver in team.drivers %}
+                    <li {% if not driver.is_active %}class="inactive-driver"{% endif %}>
+                        <span class="driver-number">#{{ driver.number }}</span>
+                        <span class="driver-code">{{ driver.driver_code }}</span>
+                        <span class="driver-name">{{ driver.full_name }}</span>
+                        {% if not driver.is_active %}
+                        <span class="inactive-badge">Inactive</span>
+                        {% endif %}
+                    </li>
+                    {% empty %}
+                    <li class="no-drivers">No drivers</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

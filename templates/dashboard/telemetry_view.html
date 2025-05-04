@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}Telemetry Data - F1 Telemetry{% endblock %}
+
+{% block content %}
+<section class="telemetry-view">
+    <div class="header">
+        <h2>F1 Telemetry Data</h2>
+        <a href="{% url 'f1_dashboard:visualization' %}" class="button">Back to Visualization</a>
+    </div>
+
+    <div class="filters">
+        <form method="get" action="{% url 'f1_dashboard:telemetry_view' %}" class="filter-form">
+            <div class="filter-group">
+                <label for="event_id">Event:</label>
+                <select id="event_id" name="event_id" onchange="this.form.submit()">
+                    {% for event in events %}
+                    <option value="{{ event.event_id }}" {% if event.event_id == selected_event %}selected{% endif %}>
+                        {{ event.event_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="session_id">Session:</label>
+                <select id="session_id" name="session_id" onchange="this.form.submit()">
+                    {% for session in sessions %}
+                    <option value="{{ session.session_id }}" {% if session.session_id == selected_session %}selected{% endif %}>
+                        {{ session.display_type }} - {{ session.session_date|date:"d M Y" }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="driver_id">Driver:</label>
+                <select id="driver_id" name="driver_id" onchange="this.form.submit()">
+                    {% for driver in drivers %}
+                    <option value="{{ driver.driver_id }}" {% if driver.driver_id == selected_driver %}selected{% endif %}>
+                        {{ driver.driver_code }} - {{ driver.driver_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="lap_number">Lap:</label>
+                <select id="lap_number" name="lap_number" onchange="this.form.submit()">
+                    <option value="">All Laps</option>
+                    {% for lap in laps %}
+                    <option value="{{ lap.lap_number }}" {% if lap.lap_number == selected_lap %}selected{% endif %}>
+                        Lap {{ lap.lap_number }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+
+    {% if message %}
+    <div class="message-container">
+        <p class="message">{{ message }}</p>
+    </div>
+    {% endif %}
+
+    {% if telemetry_data %}
+    <div class="telemetry-info">
+        {% if event_info and session_info and driver_info %}
+        <div class="info-container">
+            <div class="event-info">
+                <h3>{{ event_info.event_name }}</h3>
+                <p>{{ event_info.circuit_name }}, {{ event_info.location }}, {{ event_info.country }}</p>
+            </div>
+            <div class="session-driver-info">
+                <div class="session-info">
+                    <p><strong>Session:</strong> {{ session_info.display_type }}</p>
+                    <p><strong>Date:</strong> {{ session_info.session_date|date:"F j, Y H:i" }}</p>
+                </div>
+                <div class="driver-info">
+                    <p><strong>Driver:</strong> #{{ driver_info.number }} {{ driver_info.full_name }} ({{ driver_info.driver_code }})</p>
+                    {% if selected_lap %}
+                    <p><strong>Lap:</strong> {{ selected_lap }}</p>
+                    {% else %}
+                    <p><strong>Laps:</strong> All</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="telemetry-data-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Lap</th>
+                        <th>Lap Time</th>
+                        <th>Sector 1</th>
+                        <th>Sector 2</th>
+                        <th>Sector 3</th>
+                        <th>Speed (km/h)</th>
+                        <th>Throttle (%)</th>
+                        <th>Brake</th>
+                        <th>RPM</th>
+                        <th>DRS</th>
+                        <th>Position</th>
+                        <th>Fastest Lap</th>
+                        <th>Tire Compound</th>
+                        <th>Tire Life (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for data in telemetry_data %}
+                    <tr>
+                        <td>{{ data.lap_number }}</td>
+                        <td>{{ data.lap_time }}</td>
+                        <td>{{ data.sector1_time|floatformat:3 }}</td>
+                        <td>{{ data.sector2_time|floatformat:3 }}</td>
+                        <td>{{ data.sector3_time|floatformat:3 }}</td>
+                        <td>{{ data.speed|floatformat:0 }}</td>
+                        <td>{{ data.throttle|floatformat:1 }}</td>
+                        <td>{{ data.brake|yesno:"Yes,No" }}</td>
+                        <td>{{ data.rpm|floatformat:0 }}</td>
+                        <td>{{ data.drs }}</td>
+                        <td>{{ data.position|floatformat:0 }}</td>
+                        <td>{{ data.is_fastest_lap|yesno:"Yes,No" }}</td>
+                        <td>{{ data.tire_compound }}</td>
+                        <td>{{ data.tyre_life|floatformat:1 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

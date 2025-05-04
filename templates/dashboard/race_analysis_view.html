@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Race Analysis - F1 Telemetry{% endblock %}
+
+{% block content %}
+<section class="qualifying-analysis-view race-analysis-view">
+    <div class="header">
+        <h2>F1 Race Analysis</h2>
+        <a href="{% url 'f1_dashboard:visualization' %}" class="button">Back to Visualization</a>
+    </div>
+
+    <div class="filters">
+        <form method="get" action="{% url 'f1_analysis:race' %}" class="filter-form">
+            <div class="filter-group">
+                <label for="event_id">Event:</label>
+                <select id="event_id" name="event_id" onchange="this.form.submit()">
+                    {% for event in events %}
+                    <option value="{{ event.event_id }}" {% if event.event_id == selected_event %}selected{% endif %}>
+                        {{ event.event_name }} {{ event.year }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="analysis_id">Driver Comparison:</label>
+                <select id="analysis_id" name="analysis_id" onchange="this.form.submit()">
+                    {% for analysis in analyses %}
+                    <option value="{{ analysis.analysis_id }}" {% if analysis.analysis_id == selected_analysis %}selected{% endif %}>
+                        {{ analysis.driver1_code }} vs {{ analysis.driver2_code }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+
+    {% if analysis_details %}
+    <div class="analysis-container">
+        <div class="analysis-header">
+            <h3>{{ analysis_details.analysis_name }}</h3>
+            <p>{{ analysis_details.event_name }} {{ analysis_details.year }}</p>
+        </div>
+
+        <div class="markdown-insights">
+            <div class="markdown-content">
+                {{ analysis_details.markdown_insights|linebreaks }}
+            </div>
+        </div>
+
+        <div class="visualization-container">
+            <div class="visualization">
+                <h4>Race Pace Comparison</h4>
+                <div class="visualization-img-container">
+                    <img src="/static/{{ analysis_details.lap_times_plot_path }}" alt="Race Pace Plot" class="analysis-image">
+                </div>
+            </div>
+
+            <div class="visualization">
+                <h4>Tire Strategy Comparison</h4>
+                <div class="visualization-img-container">
+                    <img src="/static/{{ analysis_details.tire_strategy_plot_path }}" alt="Strategy Comparison Plot" class="analysis-image">
+                </div>
+            </div>
+            
+            <div class="visualization">
+                <h4>Position Changes</h4>
+                <div class="visualization-img-container">
+                    <img src="/static/{{ analysis_details.position_plot_path }}" alt="Position Changes Plot" class="analysis-image">
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="message-container">
+        <p class="message">No race analysis available for the selected filters.</p>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

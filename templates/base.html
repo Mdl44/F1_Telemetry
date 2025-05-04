@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}F1 Telemetry Analysis{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header>
+        <h1><a href="/">F1 Telemetry</a></h1>
+        <nav>
+            <button id="menu-toggle" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="main-nav">
+                <li><a href="{% url 'f1_dashboard:index' %}">Home</a></li>
+                <li><a href="{% url 'f1_dashboard:visualization' %}">Visualization</a></li>
+                <li><a href="{% url 'f1_analysis:race' %}">Race Analysis</a></li>
+                <li><a href="{% url 'f1_analysis:qualifying' %}">Qualifying Analysis</a></li>
+            </ul>
+            <ul class="user-nav">
+                {% if user.is_authenticated %}
+                <li><a href="{% url 'f1_users:profile' %}">{{ user.username }}</a></li>
+                <li><a href="{% url 'f1_users:logout' %}">Logout</a></li>
+                {% else %}
+                <li><a href="{% url 'f1_users:login' %}">Login</a></li>
+                <li><a href="{% url 'f1_users:register' %}">Register</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        {% if messages %}
+        <section class="messages">
+            {% for message in messages %}
+            <p class="message message-{{ message.tags }}">{{ message }}</p>
+            {% endfor %}
+        </section>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>&copy; {% now "Y" %} F1 Telemetry Analysis System</p>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

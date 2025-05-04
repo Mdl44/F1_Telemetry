@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - F1 Telemetry{% endblock %}
+
+{% block content %}
+<section class="profile">
+    <h2>Your Profile</h2>
+
+    <form method="post" class="profile-form">
+        {% csrf_token %}
+
+        <fieldset>
+            <legend>Personal Information</legend>
+
+            <div class="form-field">
+                <label for="id_username">Username</label>
+                {{ form.username }}
+            </div>
+
+            <div class="form-field">
+                <label for="id_email">Email</label>
+                {{ form.email }}
+            </div>
+
+            <div class="form-field">
+                <label for="id_first_name">First Name</label>
+                {{ form.first_name }}
+            </div>
+
+            <div class="form-field">
+                <label for="id_last_name">Last Name</label>
+                {{ form.last_name }}
+            </div>
+
+            <div class="form-field">
+                <label for="id_team">Team</label>
+                {{ form.team }}
+            </div>
+
+            <button type="submit" class="button">Update Profile</button>
+        </fieldset>
+    </form>
+
+    <section class="account-info">
+        <h3>Account Information</h3>
+        <dl>
+            <dt>User Role:</dt>
+            <dd>{{ user.role_id }}</dd>
+
+            <dt>Date Joined:</dt>
+            <dd>{{ user.created_at }}</dd>
+        </dl>
+    </section>
+</section>
+{% endblock %}

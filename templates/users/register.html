@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Register - F1 Telemetry{% endblock %}
+
+{% block content %}
+<section class="auth">
+    <h2>Register</h2>
+
+    <form method="post" class="auth-form">
+        {% csrf_token %}
+
+        <fieldset>
+            <div class="form-field">
+                <label for="id_username">Username</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <p class="error">{{ form.username.errors }}</p>
+                {% endif %}
+            </div>
+
+            <div class="form-field">
+                <label for="id_email">Email</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                    <p class="error">{{ form.email.errors }}</p>
+                {% endif %}
+            </div>
+
+            <div class="form-field">
+                <label for="id_password1">Password</label>
+                {{ form.password1 }}
+                {% if form.password1.errors %}
+                    <p class="error">{{ form.password1.errors }}</p>
+                {% endif %}
+                {% if form.password1.help_text %}
+                    <p class="help-text">{{ form.password1.help_text }}</p>
+                {% endif %}
+            </div>
+
+            <div class="form-field">
+                <label for="id_password2">Confirm Password</label>
+                {{ form.password2 }}
+                {% if form.password2.errors %}
+                    <p class="error">{{ form.password2.errors }}</p>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="button">Register</button>
+        </fieldset>
+    </form>
+
+    <p class="form-footer">Already have an account? <a href="{% url 'f1_users:login' %}">Login here</a></p>
+</section>
+{% endblock %}
