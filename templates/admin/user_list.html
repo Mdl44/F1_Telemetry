@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}User Management - F1 Telemetry{% endblock %}
+
+{% block content %}
+<section class="admin-user-list">
+    <div class="admin-header">
+        <h2>User Management</h2>
+        <div class="header-actions">
+            <a href="{% url 'f1_users:admin_dashboard' %}" class="button secondary">Back to Dashboard</a>
+            <a href="{% url 'f1_users:user_create' %}" class="button">Add User</a>
+        </div>
+    </div>
+    
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div class="user-table-container">
+        <table class="user-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Favorite Team</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.user_id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.first_name }} {{ user.last_name }}</td>
+                    <td>
+                        <span class="user-role role-{{ user.role_id }}">{{ user.role_id }}</span>
+                    </td>
+                    <td>
+                        {% if user.favorite_team %}
+                        <span class="team-badge" data-team="{{ user.favorite_team }}">
+                            <span class="team-color"></span>
+                            <span class="team-name">{{ user.favorite_team }}</span>
+                        </span>
+                        {% else %}
+                        <span class="no-team">No team</span>
+                        {% endif %}
+                    </td>
+                    <td class="actions">
+                        <a href="{% url 'f1_users:user_edit' user.user_id %}" class="action-button edit">Edit</a>
+                        <a href="{% url 'f1_users:user_delete' user.user_id %}" class="action-button delete">Delete</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="no-data">No users found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

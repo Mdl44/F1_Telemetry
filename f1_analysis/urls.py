@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-
+#sunt mapate modelele url la view-uri
 app_name = 'f1_analysis'
 
 urlpatterns = [

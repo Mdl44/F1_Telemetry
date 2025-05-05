@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import check_password
 
 User = get_user_model()
-
+#backend custom in locul template-ului django
 class F1AuthBackend(ModelBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):
         try:

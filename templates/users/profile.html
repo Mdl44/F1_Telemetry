@@ -15,41 +15,81 @@
             <div class="form-field">
                 <label for="id_username">Username</label>
                 {{ form.username }}
+                {% if form.username.errors %}
+                    <p class="error">{{ form.username.errors }}</p>
+                {% endif %}
             </div>
 
             <div class="form-field">
                 <label for="id_email">Email</label>
                 {{ form.email }}
+                {% if form.email.errors %}
+                    <p class="error">{{ form.email.errors }}</p>
+                {% endif %}
             </div>
 
             <div class="form-field">
                 <label for="id_first_name">First Name</label>
                 {{ form.first_name }}
+                {% if form.first_name.errors %}
+                    <p class="error">{{ form.first_name.errors }}</p>
+                {% endif %}
             </div>
 
             <div class="form-field">
                 <label for="id_last_name">Last Name</label>
                 {{ form.last_name }}
+                {% if form.last_name.errors %}
+                    <p class="error">{{ form.last_name.errors }}</p>
+                {% endif %}
             </div>
 
-            <div class="form-field">
-                <label for="id_team">Team</label>
-                {{ form.team }}
+            <div class="form-field team-selection">
+                <label for="id_team_id">Favorite Team</label>
+                <div class="team-selector">
+                    {{ form.team_id }}
+                    <div class="team-indicator" id="teamIndicator"></div>
+                </div>
+                {% if form.team_id.errors %}
+                    <p class="error">{{ form.team_id.errors }}</p>
+                {% endif %}
+                <div class="selected-team-display" id="selectedTeamDisplay">
+                    {% with primary_team=user.get_primary_team %}
+                        {% if primary_team %}
+                        <div class="team-badge" data-team="{{ primary_team }}">
+                            <span class="team-color"></span>
+                            <span class="team-name">{{ form.team_id.value|default:"No team selected" }}</span>
+                        </div>
+                        {% else %}
+                        <p class="no-team">No favorite team selected yet</p>
+                        {% endif %}
+                    {% endwith %}
+                </div>
             </div>
-
-            <button type="submit" class="button">Update Profile</button>
         </fieldset>
+        
+        <fieldset>
+            <legend>Change Password</legend>
+            
+            <div class="form-field">
+                <label for="id_password1">New Password</label>
+                {{ form.password1 }}
+                {% if form.password1.errors %}
+                    <p class="error">{{ form.password1.errors }}</p>
+                {% endif %}
+                <p class="help-text">Leave blank to keep your current password.</p>
+            </div>
+            
+            <div class="form-field">
+                <label for="id_password2">Confirm New Password</label>
+                {{ form.password2 }}
+                {% if form.password2.errors %}
+                    <p class="error">{{ form.password2.errors }}</p>
+                {% endif %}
+            </div>
+        </fieldset>
+
+        <button type="submit" class="button">Update Profile</button>
     </form>
-
-    <section class="account-info">
-        <h3>Account Information</h3>
-        <dl>
-            <dt>User Role:</dt>
-            <dd>{{ user.role_id }}</dd>
-
-            <dt>Date Joined:</dt>
-            <dd>{{ user.created_at }}</dd>
-        </dl>
-    </section>
 </section>
 {% endblock %}

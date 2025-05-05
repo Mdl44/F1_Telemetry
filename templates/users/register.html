@@ -9,6 +9,10 @@
     <form method="post" class="auth-form">
         {% csrf_token %}
 
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+            {{ form.role_id }}
+
         <fieldset>
             <div class="form-field">
                 <label for="id_username">Username</label>
@@ -23,6 +27,22 @@
                 {{ form.email }}
                 {% if form.email.errors %}
                     <p class="error">{{ form.email.errors }}</p>
+                {% endif %}
+            </div>
+
+            <div class="form-field">
+                <label for="id_first_name">First Name</label>
+                {{ form.first_name }}
+                {% if form.first_name.errors %}
+                    <p class="error">{{ form.first_name.errors }}</p>
+                {% endif %}
+            </div>
+
+            <div class="form-field">
+                <label for="id_last_name">Last Name</label>
+                {{ form.last_name }}
+                {% if form.last_name.errors %}
+                    <p class="error">{{ form.last_name.errors }}</p>
                 {% endif %}
             </div>
 

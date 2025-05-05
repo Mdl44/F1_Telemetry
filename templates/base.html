@@ -24,11 +24,14 @@
             </ul>
             <ul class="user-nav">
                 {% if user.is_authenticated %}
-                <li><a href="{% url 'f1_users:profile' %}">{{ user.username }}</a></li>
-                <li><a href="{% url 'f1_users:logout' %}">Logout</a></li>
+                    <li><a href="{% url 'f1_users:profile' %}">{{ user.username }}</a></li>
+                    {% if user.role_id == 'admin' %}
+                        <li><a href="{% url 'f1_users:admin_dashboard' %}" class="admin-link">Admin Panel</a></li>
+                    {% endif %}
+                    <li><a href="{% url 'f1_users:logout' %}">Logout</a></li>
                 {% else %}
-                <li><a href="{% url 'f1_users:login' %}">Login</a></li>
-                <li><a href="{% url 'f1_users:register' %}">Register</a></li>
+                    <li><a href="{% url 'f1_users:login' %}">Login</a></li>
+                    <li><a href="{% url 'f1_users:register' %}">Register</a></li>
                 {% endif %}
             </ul>
         </nav>

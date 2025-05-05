@@ -3,17 +3,17 @@ import sys
 import shutil
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection
-from f1_core.analyzers.db_race_analyzer import DBF1RaceAnalyzer
+from f1_analysis.analyzers.db_race_analyzer import DBF1RaceAnalyzer
 import json
 
 class Command(BaseCommand):
 
     def add_arguments(self, parser):
-        parser.add_argument('--event', type=str, required=True, help='Numele evenimentului')
-        parser.add_argument('--year', type=int, required=True, help='Anul evenimentului')
-        parser.add_argument('--drivers', type=str, required=True, help='Codurile piloților separate prin virgulă (ex: VER,LEC)')
-        parser.add_argument('--save-db', action='store_true', help='Salvează analiza în baza de date')
-        parser.add_argument('--output-dir', type=str, help='Director pentru output')
+        parser.add_argument('--event', type=str, required=True)
+        parser.add_argument('--year', type=int, required=True)
+        parser.add_argument('--drivers', type=str, required=True)
+        parser.add_argument('--save-db', action='store_true')
+        parser.add_argument('--output-dir', type=str)
 
     def handle(self, *args, **options):
         event_name = options['event']
@@ -21,8 +21,6 @@ class Command(BaseCommand):
         drivers_str = options['drivers']
         save_to_db = options['save_db']
         output_dir = options['output_dir']
-
-        self.stdout.write(f"Generating race analysis for {event_name} {year} with drivers {drivers_str}")
 
         db_params = {
             'host': 'localhost',
@@ -33,8 +31,6 @@ class Command(BaseCommand):
         }
 
         driver_list = [d.strip() for d in drivers_str.split(',')]
-        if len(driver_list) != 2:
-            raise CommandError("Trebuie să specificați exact doi piloți")
 
         static_folder = "f1_dashboard/static"
         relative_path = f"images/race_analysis/{event_name.replace(' ', '_')}_{year}/{driver_list[0]}_vs_{driver_list[1]}"
@@ -64,15 +60,12 @@ class Command(BaseCommand):
 
                 if 'lap_times_viz' in results and results['lap_times_viz'] and os.path.exists(results['lap_times_viz']):
                     shutil.copy(results['lap_times_viz'], os.path.join(static_folder, rel_pace_path))
-                    self.stdout.write(f"Copied pace visualization to {rel_pace_path}")
 
                 if 'tire_strategy_viz' in results and results['tire_strategy_viz'] and os.path.exists(results['tire_strategy_viz']):
                     shutil.copy(results['tire_strategy_viz'], os.path.join(static_folder, rel_strategy_path))
-                    self.stdout.write(f"Copied strategy visualization to {rel_strategy_path}")
                     
                 if 'position_viz' in results and results['position_viz'] and os.path.exists(results['position_viz']):
                     shutil.copy(results['position_viz'], os.path.join(static_folder, rel_position_path))
-                    self.stdout.write(f"Copied position visualization to {rel_position_path}")
 
                 with connection.cursor() as cursor:
                     cursor.execute("""
@@ -99,8 +92,3 @@ class Command(BaseCommand):
                         options['year'],
                         json.dumps(sorted(driver_list))
                     ])
-
-        if results:
-            self.stdout.write(self.style.SUCCESS("Analysis complete!"))
-        else:
-            self.stdout.write(self.style.ERROR("No results were generated due to errors."))

@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete User - F1 Telemetry{% endblock %}
+
+{% block content %}
+<section class="confirm-delete">
+    <div class="delete-container">
+        <h2>Confirm Deletion</h2>
+        
+        <div class="warning">
+            <p>Are you sure you want to delete user <strong>{{ user.username }}</strong>?</p>
+            <p>This action cannot be undone.</p>
+        </div>
+        
+        <div class="user-info">
+            <h3>User Details</h3>
+            <table>
+                <tr>
+                    <th>Username:</th>
+                    <td>{{ user.username }}</td>
+                </tr>
+                <tr>
+                    <th>Email:</th>
+                    <td>{{ user.email }}</td>
+                </tr>
+                <tr>
+                    <th>Full Name:</th>
+                    <td>{{ user.first_name }} {{ user.last_name }}</td>
+                </tr>
+                <tr>
+                    <th>Role:</th>
+                    <td><span class="user-role role-{{ user.role_id }}">{{ user.role_id }}</span></td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="action-buttons">
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="button danger">Delete User</button>
+                <a href="{% url 'f1_users:user_list' %}" class="button secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

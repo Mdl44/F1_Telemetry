@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - F1 Telemetry{% endblock %}
+
+{% block content %}
+<section class="admin-dashboard">
+    <div class="admin-header">
+        <h2>Administrator Dashboard</h2>
+        <span>Welcome, {{ user.first_name|default:user.username }}</span>
+    </div>
+    
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div class="admin-cards">
+        <div class="admin-card">
+            <h3>User Management</h3>
+            <p>View, add, edit or delete user accounts. Manage user roles and permissions.</p>
+            <a href="{% url 'f1_users:user_list' %}" class="button">Manage Users</a>
+        </div>
+        
+        <div class="admin-card">
+            <h3>System Statistics</h3>
+            <p>View system statistics and usage data.</p>
+            <ul class="stats-list">
+                <li>Total Users: <strong>{{ user_count }}</strong></li>
+                <li>Team Members: <strong>{{ team_member_count }}</strong></li>
+                <li>Administrators: <strong>{{ admin_count }}</strong></li>
+            </ul>
+        </div>
+    </div>
+</section>
+{% endblock %}

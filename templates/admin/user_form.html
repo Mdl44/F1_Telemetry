@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - F1 Telemetry{% endblock %}
+
+{% block content %}
+<section class="admin-user-form">
+    <div class="form-header">
+        <h2>{{ title }}</h2>
+        <a href="{% url 'f1_users:user_list' %}" class="button secondary">Back to User List</a>
+    </div>
+    
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <form method="post" class="user-form">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <h3>Account Information</h3>
+            
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="id_username">Username</label>
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                    <p class="error">{{ form.username.errors }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="form-field">
+                    <label for="id_email">Email</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                    <p class="error">{{ form.email.errors }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="id_password1">Password</label>
+                    {{ form.password1 }}
+                    {% if form.password1.errors %}
+                    <p class="error">{{ form.password1.errors }}</p>
+                    {% endif %}
+                    {% if user %}
+                    <p class="help-text">Leave blank to keep current password</p>
+                    {% endif %}
+                </div>
+                
+                <div class="form-field">
+                    <label for="id_password2">Confirm Password</label>
+                    {{ form.password2 }}
+                    {% if form.password2.errors %}
+                    <p class="error">{{ form.password2.errors }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <h3>Personal Information</h3>
+            
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="id_first_name">First Name</label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}
+                    <p class="error">{{ form.first_name.errors }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="form-field">
+                    <label for="id_last_name">Last Name</label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}
+                    <p class="error">{{ form.last_name.errors }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <h3>Permissions and Preferences</h3>
+            
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="id_role_id">Role</label>
+                    {{ form.role_id }}
+                    {% if form.role_id.errors %}
+                    <p class="error">{{ form.role_id.errors }}</p>
+                    {% endif %}
+                    <p class="help-text">Select the role that determines the user's access level</p>
+                </div>
+                
+                <div class="form-field">
+                    <label for="id_team_id">Favorite Team</label>
+                    {{ form.team_id }}
+                    {% if form.team_id.errors %}
+                    <p class="error">{{ form.team_id.errors }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="button">Save User</button>
+            <a href="{% url 'f1_users:user_list' %}" class="button secondary">Cancel</a>
+        </div>
+    </form>
+</section>
+{% endblock %}
