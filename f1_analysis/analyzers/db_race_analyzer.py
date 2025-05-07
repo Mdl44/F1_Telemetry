@@ -846,7 +846,10 @@ class DBF1RaceAnalyzer:
         existing_analysis = self.check_existing_analysis(event_name, year, drivers)
         if existing_analysis:
             print(f"Using existing analysis for {' vs '.join(drivers)} at {event_name} {year}")
-            return existing_analysis
+            return {
+            'existing_analysis': True,
+            'analysis_id': existing_analysis['analysis_id']
+        }
         
         print(f"Starting race analysis for {' vs '.join(drivers)} at {event_name} {year}")
         

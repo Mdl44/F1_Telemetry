@@ -285,9 +285,6 @@ BEGIN
                 
             WHEN NEW.time_str ~ '^[0-9]+:[0-9]+\.[0-9]+$' THEN
                 EXTRACT(EPOCH FROM ('00:' || NEW.time_str)::interval)
-                
-            ELSE
-                NULL
         END;
     END IF;
     

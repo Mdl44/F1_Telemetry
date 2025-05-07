@@ -10,7 +10,7 @@
     </div>
 
     <div class="filters">
-        <form method="get" action="{% url 'f1_analysis:race' %}" class="filter-form">
+        <form method="get" action="{% url 'f1_dashboard:race_analysis_view' %}" class="filter-form">
             <div class="filter-group">
                 <label for="event_id">Event:</label>
                 <select id="event_id" name="event_id" onchange="this.form.submit()">
@@ -21,17 +21,23 @@
                     {% endfor %}
                 </select>
             </div>
-
+            
+            {% if analyses %}
             <div class="filter-group">
-                <label for="analysis_id">Driver Comparison:</label>
+                <label for="analysis_id">Analysis:</label>
                 <select id="analysis_id" name="analysis_id" onchange="this.form.submit()">
                     {% for analysis in analyses %}
                     <option value="{{ analysis.analysis_id }}" {% if analysis.analysis_id == selected_analysis %}selected{% endif %}>
-                        {{ analysis.driver1_code }} vs {{ analysis.driver2_code }}
+                        {% if analysis.driver1_code and analysis.driver2_code %}
+                            {{ analysis.driver1_code }} vs {{ analysis.driver2_code }}
+                        {% else %}
+                            Analysis #{{ analysis.analysis_id }}
+                        {% endif %}
                     </option>
                     {% endfor %}
                 </select>
             </div>
+            {% endif %}
         </form>
     </div>
 
@@ -48,27 +54,28 @@
             </div>
         </div>
 
-        <div class="visualization-container">
-            <div class="visualization">
-                <h4>Race Pace Comparison</h4>
-                <div class="visualization-img-container">
-                    <img src="/static/{{ analysis_details.lap_times_plot_path }}" alt="Race Pace Plot" class="analysis-image">
-                </div>
-            </div>
-
-            <div class="visualization">
-                <h4>Tire Strategy Comparison</h4>
-                <div class="visualization-img-container">
-                    <img src="/static/{{ analysis_details.tire_strategy_plot_path }}" alt="Strategy Comparison Plot" class="analysis-image">
-                </div>
-            </div>
-            
-            <div class="visualization">
-                <h4>Position Changes</h4>
-                <div class="visualization-img-container">
-                    <img src="/static/{{ analysis_details.position_plot_path }}" alt="Position Changes Plot" class="analysis-image">
-                </div>
-            </div>
+        <div class="visualization-img-container">
+            {% if analysis_details.lap_times_plot_path %}
+                <img src="/{{ analysis_details.lap_times_plot_path }}" alt="Lap Times Plot" class="analysis-image">
+            {% else %}
+                <p>Lap times plot not available</p>
+            {% endif %}
+        </div>
+        
+        <div class="visualization-img-container">
+            {% if analysis_details.tire_strategy_plot_path %}
+                <img src="/{{ analysis_details.tire_strategy_plot_path }}" alt="Tire Strategy Plot" class="analysis-image">
+            {% else %}
+                <p>Tire strategy plot not available</p>
+            {% endif %}
+        </div>
+        
+        <div class="visualization-img-container">
+            {% if analysis_details.position_plot_path %}
+                <img src="/{{ analysis_details.position_plot_path }}" alt="Position Changes Plot" class="analysis-image">
+            {% else %}
+                <p>Position plot not available</p>
+            {% endif %}
         </div>
     </div>
     {% else %}

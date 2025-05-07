@@ -174,6 +174,7 @@ class AdminUserForm(forms.ModelForm):
         choices=[
             ('viewer', 'Viewer'),
             ('team_member', 'Team Member'),
+            ('analyst', 'Analyst'),
             ('admin', 'Administrator')
         ],
         widget=forms.Select(attrs={'class': 'form-control'}),

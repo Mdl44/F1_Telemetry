@@ -185,6 +185,7 @@ class DBF1QualifyingAnalyzer:
                     
                     if directional_delta > 0:
                         delta_str_other = f"+{directional_delta:.3f}s"
+                    else:
                         delta_str_other = f"{directional_delta:.3f}s"
                     
                     if pd.isna(lap['lap_number']):
@@ -668,17 +669,14 @@ class DBF1QualifyingAnalyzer:
             }
 
         if not output_dir:
-            event_folder = f"{event_name.replace(' ', '_')}_{year}"
+            event_folder = event_name.replace(' ', '_')
             driver_str = "_vs_".join(sorted(drivers))
             output_dir = os.path.join("analysis", "quali_analysis", event_folder, driver_str)
         
         print(f"Starting qualifying analysis for {' vs '.join(drivers)} at {event_name} {year}")
         
-        base_path = os.path.join("analysis", "quali_analysis", f"{event_name}_{year}", f"{drivers[0]}_vs_{drivers[1]}")
-
-        if output_dir:
-            base_path = output_dir
-            print(f"Using custom output directory: {base_path}")
+        base_path = output_dir
+        print(f"Using custom output directory: {base_path}")
 
         os.makedirs(base_path, exist_ok=True)
         

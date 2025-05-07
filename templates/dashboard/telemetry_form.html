@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ action }} Telemetry Data - F1 Telemetry{% endblock %}
+
+{% block content %}
+<section class="telemetry-form">
+    <div class="header">
+        <h2>{{ action }} Telemetry Data</h2>
+        <a href="{% url 'f1_dashboard:telemetry_view' %}" class="button">Back to Telemetry View</a>
+    </div>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" class="data-form">
+        {% csrf_token %}
+        
+        <div class="form-section">
+            <h3>Session & Driver</h3>
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="session_id">Session:</label>
+                    <select id="session_id" name="session_id" required>
+                        {% for session in sessions %}
+                        <option value="{{ session.session_id }}" {% if telemetry.session_id == session.session_id %}selected{% endif %}>
+                            {{ session.display_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-field">
+                    <label for="driver_id">Driver:</label>
+                    <select id="driver_id" name="driver_id" required>
+                        {% for driver in drivers %}
+                        <option value="{{ driver.driver_id }}" {% if telemetry.driver_id == driver.driver_id %}selected{% endif %}>
+                            {{ driver.driver_code }} - {{ driver.first_name }} {{ driver.last_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h3>Lap Information</h3>
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="lap_number">Lap Number:</label>
+                    <input type="number" id="lap_number" name="lap_number" value="{{ telemetry.lap_number }}" required>
+                </div>
+                
+                <div class="form-field">
+                    <label for="time_str">Time:</label>
+                    <input type="text" id="time_str" name="time_str" value="{{ telemetry.time_str }}" required>
+                </div>
+                
+                <div class="form-field">
+                    <label for="position">Position:</label>
+                    <input type="number" id="position" name="position" value="{{ telemetry.position }}">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="lap_time">Lap Time (seconds):</label>
+                    <input type="number" id="lap_time" name="lap_time" value="{{ telemetry.lap_time }}" step="0.001">
+                </div>
+                
+                <div class="form-field">
+                    <label for="sector1_time">Sector 1 (seconds):</label>
+                    <input type="number" id="sector1_time" name="sector1_time" value="{{ telemetry.sector1_time }}" step="0.001">
+                </div>
+                
+                <div class="form-field">
+                    <label for="sector2_time">Sector 2 (seconds):</label>
+                    <input type="number" id="sector2_time" name="sector2_time" value="{{ telemetry.sector2_time }}" step="0.001">
+                </div>
+                
+                <div class="form-field">
+                    <label for="sector3_time">Sector 3 (seconds):</label>
+                    <input type="number" id="sector3_time" name="sector3_time" value="{{ telemetry.sector3_time }}" step="0.001">
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h3>Telemetry Data</h3>
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="speed">Speed (km/h):</label>
+                    <input type="number" id="speed" name="speed" value="{{ telemetry.speed }}" step="0.1" required>
+                </div>
+                
+                <div class="form-field">
+                    <label for="throttle">Throttle (%):</label>
+                    <input type="number" id="throttle" name="throttle" value="{{ telemetry.throttle }}" min="0" max="100" step="0.1" required>
+                </div>
+                
+                <div class="form-field">
+                    <label for="rpm">RPM:</label>
+                    <input type="number" id="rpm" name="rpm" value="{{ telemetry.rpm }}" step="1">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-field checkbox">
+                    <input type="checkbox" id="brake" name="brake" {% if telemetry.brake %}checked{% endif %}>
+                    <label for="brake">Brake Active</label>
+                </div>
+                
+                <div class="form-field checkbox">
+                    <input type="checkbox" id="drs" name="drs" {% if telemetry.drs %}checked{% endif %}>
+                    <label for="drs">DRS Active</label>
+                </div>
+                
+                <div class="form-field checkbox">
+                    <input type="checkbox" id="is_fastest_lap" name="is_fastest_lap" {% if telemetry.is_fastest_lap %}checked{% endif %}>
+                    <label for="is_fastest_lap">Fastest Lap</label>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="tire_compound">Tire Compound:</label>
+                    <select id="tire_compound" name="tire_compound">
+                        <option value="SOFT" {% if telemetry.tire_compound == 'SOFT' %}selected{% endif %}>Soft</option>
+                        <option value="MEDIUM" {% if telemetry.tire_compound == 'MEDIUM' %}selected{% endif %}>Medium</option>
+                        <option value="HARD" {% if telemetry.tire_compound == 'HARD' %}selected{% endif %}>Hard</option>
+                        <option value="INTERMEDIATE" {% if telemetry.tire_compound == 'INTERMEDIATE' %}selected{% endif %}>Intermediate</option>
+                        <option value="WET" {% if telemetry.tire_compound == 'WET' %}selected{% endif %}>Wet</option>
+                    </select>
+                </div>
+                
+                <div class="form-field">
+                    <label for="tyre_life">Tire Life (%):</label>
+                    <input type="number" id="tyre_life" name="tyre_life" value="{{ telemetry.tyre_life }}" min="0" max="100" step="0.1">
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="button primary">Save Telemetry Data</button>
+            <a href="{% url 'f1_dashboard:telemetry_view' %}" class="button">Cancel</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

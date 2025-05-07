@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Driver - F1 Telemetry{% endblock %}
+
+{% block content %}
+<section class="confirm-delete">
+    <div class="delete-container">
+        <h2>Confirm Deletion</h2>
+        
+        <div class="warning">
+            <p>Are you sure you want to delete driver <strong>{{ driver.driver_code }}</strong>?</p>
+            <p>This action cannot be undone. All related data (team assignments, entries, telemetry) will also be deleted.</p>
+        </div>
+        
+        <div class="driver-info">
+            <h3>Driver Details</h3>
+            <table>
+                <tr>
+                    <th>Driver Code:</th>
+                    <td>{{ driver.driver_code }}</td>
+                </tr>
+                <tr>
+                    <th>Name:</th>
+                    <td>{{ driver.first_name }} {{ driver.last_name }}</td>
+                </tr>
+                <tr>
+                    <th>Number:</th>
+                    <td>{{ driver.number }}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="action-buttons">
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="button danger">Delete Driver</button>
+                <a href="{% url 'f1_dashboard:driver_view' %}" class="button secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

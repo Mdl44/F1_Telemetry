@@ -5,8 +5,13 @@
 {% block content %}
 <section class="telemetry-view">
     <div class="header">
-        <h2>F1 Telemetry Data</h2>
-        <a href="{% url 'f1_dashboard:visualization' %}" class="button">Back to Visualization</a>
+        <h2>Telemetry Data</h2>
+        <div class="header-actions">
+            {% if user.role_id == 'analyst' or user.role_id == 'admin' %}
+            <a href="{% url 'f1_dashboard:telemetry_create' %}" class="button primary">Add Telemetry Data</a>
+            {% endif %}
+            <a href="{% url 'f1_dashboard:visualization' %}" class="button">Back to Visualization</a>
+        </div>
     </div>
 
     <div class="filters">
@@ -107,6 +112,9 @@
                         <th>Fastest Lap</th>
                         <th>Tire Compound</th>
                         <th>Tire Life (%)</th>
+                        {% if user.role_id == 'analyst' or user.role_id == 'admin' %}
+                        <th>Actions</th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody>
@@ -126,6 +134,14 @@
                         <td>{{ data.is_fastest_lap|yesno:"Yes,No" }}</td>
                         <td>{{ data.tire_compound }}</td>
                         <td>{{ data.tyre_life|floatformat:1 }}</td>
+                        {% if user.role_id == 'analyst' or user.role_id == 'admin' %}
+                        <td class="actions">
+                            {% if data.telemetry_id %}
+                            <a href="{% url 'f1_dashboard:telemetry_edit' data.telemetry_id %}" class="action-button edit">Edit</a>
+                            <a href="{% url 'f1_dashboard:telemetry_delete' data.telemetry_id %}" class="action-button delete">Delete</a>
+                            {% endif %}
+                        </td>
+                        {% endif %}
                     </tr>
                     {% endfor %}
                 </tbody>

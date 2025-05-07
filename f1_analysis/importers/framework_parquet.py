@@ -379,13 +379,12 @@ if __name__ == "__main__":
                 print(f"Processing race: {race_name} - {session_type}")
                 print(f"{'='*50}\n")
                 
-                # Process all teams and drivers for 2024
                 for team, drivers in DRIVERS_BY_SEASON[year].items():
                     print(f"Processing team: {team}")
                     for driver_code in drivers:
                         print(f"Extracting data for {driver_code}")
                         extract_telemetry(year, race_name, session_type, driver_code, sample_interval=1.0)
-                        time.sleep(2)  # Prevent API rate limiting
+                        time.sleep(2)
         except Exception as e:
             print(f"Error processing race {race_num}: {e}")
             continue

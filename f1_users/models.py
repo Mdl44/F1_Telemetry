@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.hashers import make_password
+from django.db import connection
 
 
 class F1UserManager(BaseUserManager):
@@ -61,6 +62,9 @@ class F1User(AbstractBaseUser):
     def is_team_member(self):
         return self.role_id in ['team_member', 'analyst', 'admin']
 
+    def is_analyst(self):
+        return self.role_id in ['analyst', 'admin']
+
     def is_admin_user(self):
         return self.role_id == 'admin'
 
@@ -110,7 +114,6 @@ class F1User(AbstractBaseUser):
         return self.role_id in permission_map.get(feature, [])
     
     def get_primary_team(self):
-        from django.db import connection
         with connection.cursor() as cursor:
             cursor.execute(
                 "SELECT team_id FROM user_team_access WHERE user_id = %s AND is_primary = TRUE",

@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ action }} Driver - F1 Telemetry{% endblock %}
+
+{% block content %}
+<section class="form-container">
+    <div class="header">
+        <h2>{{ action }} Driver</h2>
+        <a href="{% url 'f1_dashboard:driver_view' %}" class="button">Back to Drivers</a>
+    </div>
+
+    <form method="post" class="data-form">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="driver_code">Driver Code (3 letters):</label>
+            <input type="text" id="driver_code" name="driver_code" value="{{ driver.driver_code|default:'' }}" maxlength="3" required 
+                   {% if action == 'Edit' %}readonly{% endif %} 
+                   placeholder="e.g. HAM">
+            <small>3-letter code used in timing screens (will be converted to uppercase)</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="first_name">First Name:</label>
+            <input type="text" id="first_name" name="first_name" value="{{ driver.first_name|default:'' }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="last_name">Last Name:</label>
+            <input type="text" id="last_name" name="last_name" value="{{ driver.last_name|default:'' }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="number">Race Number:</label>
+            <input type="number" id="number" name="number" value="{{ driver.number|default:'' }}" min="1" max="999" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="country">Country:</label>
+            <input type="text" id="country" name="country" value="{{ driver.country|default:'' }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="date_of_birth">Date of Birth:</label>
+            <input type="date" id="date_of_birth" name="date_of_birth" value="{{ driver.date_of_birth|date:'Y-m-d'|default:'' }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="is_active">Active Driver:</label>
+            <input type="checkbox" id="is_active" name="is_active" {% if driver.is_active|default:True %}checked{% endif %}>
+        </div>
+        
+        <div class="form-section">
+            <h3>Team Assignment</h3>
+            
+            <div class="form-group">
+                <label for="team_id">Team:</label>
+                <select id="team_id" name="team_id" required>
+                    <option value="">-- Select Team --</option>
+                    {% for team in teams %}
+                    <option value="{{ team.team_id }}" {% if team.team_id == driver_team.team_id %}selected{% endif %}>
+                        {{ team.team_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="year">Season:</label>
+                <select id="year" name="year" required>
+                    <option value="">-- Select Year --</option>
+                    {% for year in years %}
+                    <option value="{{ year }}" {% if year == driver_team.year %}selected{% endif %}>{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="button primary">Save Driver</button>
+            <a href="{% url 'f1_dashboard:driver_view' %}" class="button">Cancel</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

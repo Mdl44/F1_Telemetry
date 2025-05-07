@@ -6,45 +6,54 @@
 <section class="driver-view">
     <div class="header">
         <h2>Formula 1 Drivers</h2>
-        <a href="{% url 'f1_dashboard:visualization' %}" class="button">Back to Visualization</a>
+        <div class="header-actions">
+            {% if user.role_id == 'analyst' or user.role_id == 'admin' %}
+            <a href="{% url 'f1_dashboard:driver_create' %}" class="button primary">Add New Driver</a>
+            {% endif %}
+            <a href="{% url 'f1_dashboard:visualization' %}" class="button">Back to Visualization</a>
+        </div>
     </div>
 
-    <div class="year-filter">
-        <form method="get" action="{% url 'f1_dashboard:driver_view' %}">
-            <label for="year">Season:</label>
-            <select id="year" name="year" onchange="this.form.submit()">
-                {% for year in available_years %}
-                <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
-                {% endfor %}
-            </select>
+    <div class="filters">
+        <form method="get" action="{% url 'f1_dashboard:driver_view' %}" class="filter-form">
+            <div class="filter-group">
+                <label for="year">Season:</label>
+                <select id="year" name="year" onchange="this.form.submit()">
+                    {% for year in available_years %}
+                    <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
         </form>
     </div>
 
-    <p class="description">Current drivers competing in the {{ selected_year }} Formula 1 World Championship.</p>
+    <p class="description">Drivers competing in the {{ selected_year }} Formula 1 World Championship.</p>
 
-    <div class="teams-container">
+    <div class="teams-grid">
         {% for team in teams %}
-        <div class="team-section" data-team-id="{{ team.team_id }}">
-            <div class="team-header">
-                <h3>{{ team.team_name }}</h3>
-                <span class="team-code">{{ team.team_code }}</span>
-            </div>
-
-            <div class="drivers-grid">
+        <div class="team-section">
+            <h3 class="team-name">{{ team.team_name }}</h3>
+            <div class="drivers-list">
                 {% for driver in team.drivers %}
                 <div class="driver-card">
-                    <div class="driver-number">{{ driver.number }}</div>
+                    <div class="driver-header">
+                        <span class="driver-number">#{{ driver.number }}</span>
+                        <span class="driver-code">{{ driver.driver_code }}</span>
+                    </div>
                     <div class="driver-info">
-                        <div class="driver-name-code">
-                            <span class="driver-code">{{ driver.driver_code }}</span>
-                            <h4>{{ driver.full_name }}</h4>
-                        </div>
+                        <h4 class="driver-name">{{ driver.full_name }}</h4>
                         <div class="driver-details">
-                            <p><strong>Country:</strong> {{ driver.country }}</p>
+                            <p>Country: {{ driver.country }}</p>
                             {% if driver.age %}
-                            <p><strong>Age:</strong> {{ driver.age }}</p>
+                            <p>Age: {{ driver.age }}</p>
                             {% endif %}
                         </div>
+                        {% if user.role_id == 'analyst' or user.role_id == 'admin' %}
+                        <div class="driver-actions">
+                            <a href="{% url 'f1_dashboard:driver_edit' driver.driver_id %}" class="action-button edit">Edit</a>
+                            <a href="{% url 'f1_dashboard:driver_delete' driver.driver_id %}" class="action-button delete">Delete</a>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}

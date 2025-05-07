@@ -1609,6 +1609,11 @@ nav {
     color: #d84315;
 }
 
+.role-analyst {
+    background-color: #d6eded;
+    color: #15d8d8;
+}
+
 .actions {
     display: flex;
     gap: 0.5rem;

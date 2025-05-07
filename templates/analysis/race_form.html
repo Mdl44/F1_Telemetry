@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Race Analysis{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Create Race Analysis</h2>
+    
+    <div class="nav-links">
+        <a href="{% url 'f1_dashboard:race_analysis_view' %}" class="button">View Existing Analyses</a>
+        <a href="{% url 'f1_dashboard:index' %}" class="button">Back to Dashboard</a>
+    </div>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'f1_analysis:create_race_analysis' %}">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="event_id">Event:</label>
+            <select id="event_id" name="event_id" class="form-control" required onchange="loadDrivers()">
+                <option value="">Select an Event</option>
+                {% for event in events %}
+                <option value="{{ event.event_id }}">{{ event.event_name }} {{ event.year }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="driver1_id">First Driver:</label>
+            <select id="driver1_id" name="driver1_id" class="form-control" required disabled>
+                <option value="">Select Event First</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="driver2_id">Second Driver:</label>
+            <select id="driver2_id" name="driver2_id" class="form-control" required disabled>
+                <option value="">Select Event First</option>
+            </select>
+        </div>
+        
+        <div class="info-box">
+            <p><strong>Note:</strong> Creating a race analysis may take a few moments. Please be patient.</p>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Create Analysis</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function loadDrivers() {
+        const eventId = document.getElementById('event_id').value;
+        const driver1Select = document.getElementById('driver1_id');
+        const driver2Select = document.getElementById('driver2_id');
+        
+        driver1Select.innerHTML = '<option value="">Loading drivers...</option>';
+        driver2Select.innerHTML = '<option value="">Loading drivers...</option>';
+        driver1Select.disabled = true;
+        driver2Select.disabled = true;
+        
+        if (!eventId) {
+            driver1Select.innerHTML = '<option value="">Select Event First</option>';
+            driver2Select.innerHTML = '<option value="">Select Event First</option>';
+            return;
+        }
+        
+        fetch(`{% url 'f1_analysis:get_race_drivers' %}?event_id=${eventId}`)
+            .then(response => response.json())
+            .then(data => {
+                driver1Select.innerHTML = '<option value="">Select First Driver</option>';
+                driver2Select.innerHTML = '<option value="">Select Second Driver</option>';
+                
+                if (data.drivers.length === 0) {
+                    driver1Select.innerHTML = '<option value="">No drivers found</option>';
+                    driver2Select.innerHTML = '<option value="">No drivers found</option>';
+                } else {
+                    data.drivers.forEach(driver => {
+                        const option1 = document.createElement('option');
+                        option1.value = driver.driver_id;
+                        option1.textContent = `${driver.driver_code} - ${driver.driver_name}`;
+                        driver1Select.appendChild(option1);
+                        
+                        const option2 = document.createElement('option');
+                        option2.value = driver.driver_id;
+                        option2.textContent = `${driver.driver_code} - ${driver.driver_name}`;
+                        driver2Select.appendChild(option2);
+                    });
+                    
+                    driver1Select.disabled = false;
+                    driver2Select.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading drivers:', error);
+                driver1Select.innerHTML = '<option value="">Error loading drivers</option>';
+                driver2Select.innerHTML = '<option value="">Error loading drivers</option>';
+            });
+    }
+</script>
+{% endblock %}
