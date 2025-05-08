@@ -1,0 +1,16 @@
+[Unit]
+Description=F1 Telemetry Gunicorn Service
+After=network.target
+
+[Service]
+User=f1user
+Group=www-data
+WorkingDirectory=/var/www/f1telemetry
+Environment="DJANGO_SETTINGS_MODULE=F1_telemetry.settings_production"
+ExecStart=/var/www/f1telemetry/venv/bin/gunicorn \
+    --workers 3 \
+    --bind unix:/var/www/f1telemetry/F1_telemetry.sock \
+    F1_telemetry.wsgi:application
+
+[Install]
+WantedBy=multi-user.target

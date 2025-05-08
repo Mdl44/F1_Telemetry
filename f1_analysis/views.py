@@ -1,21 +1,23 @@
 from django.shortcuts import render, redirect
-from django.contrib import messages
+#render -> combina template HTML cu date => raspuns HTTP
+from django.contrib import messages #mesaje de succes,eroare,etc.
 from django.db import connection
 from django.http import JsonResponse
 from f1_users.decorators import team_member_required
 from f1_analysis.analyzers.db_qualifying_analyzer import DBF1QualifyingAnalyzer
 import json
-from django.urls import reverse
+from django.urls import reverse # generaza URL-uri din numele view-urilor
 from f1_analysis.analyzers.db_race_analyzer import DBF1RaceAnalyzer 
 
 def execute_query(query, params=None):
     with connection.cursor() as cursor:
         cursor.execute(query, params or [])
-        columns = [col[0] for col in cursor.description]
-        return [dict(zip(columns, row)) for row in cursor.fetchall()]
+        columns = [col[0] for col in cursor.description] # numele coloanelor
+        return [dict(zip(columns, row)) for row in cursor.fetchall()] #dictionar cu rezultatele unui query
 
-@team_member_required
+@team_member_required #acces restrictionat
 def qualifying_analysis(request):
+    
     events = execute_query("""
         SELECT DISTINCT e.event_id, e.event_name, e.year, e.event_date 
         FROM event e
@@ -24,7 +26,7 @@ def qualifying_analysis(request):
         ORDER BY e.year DESC, e.event_date DESC
     """)
     
-    context = {'events': events}
+    context = {'events': events} # datele trimise template-ului html
     return render(request, 'analysis/qualifying_form.html', context)
 
 @team_member_required
@@ -51,22 +53,12 @@ def get_qualifying_drivers(request):
         WHERE t.session_id = %s
         ORDER BY d.driver_code
     """, [session_id])
-    
-    if not drivers:
-        drivers = execute_query("""
-            SELECT DISTINCT d.driver_id, d.driver_code, 
-                   d.first_name || ' ' || d.last_name as driver_name
-            FROM driver d
-            JOIN event_entry ee ON d.driver_id = ee.driver_id
-            WHERE ee.event_id = %s
-            ORDER BY d.driver_code
-        """, [event_id])
-    
+
     return JsonResponse({'drivers': drivers})
 
 @team_member_required
 def create_qualifying_analysis(request):
-    if request.method == 'POST':
+    if request.method == 'POST': #daca a fost trimis formularul
         event_id = request.POST.get('event_id')
         driver1_id = request.POST.get('driver1_id')
         driver2_id = request.POST.get('driver2_id')
@@ -75,17 +67,9 @@ def create_qualifying_analysis(request):
             messages.error(request, "All fields are required")
             return redirect('f1_analysis:qualifying')
             
-        if driver1_id == driver2_id:
-            messages.error(request, "Please select two different drivers")
-            return redirect('f1_analysis:qualifying')
-        
         event_data = execute_query("""
             SELECT event_name, year FROM event WHERE event_id = %s
         """, [event_id])
-        
-        if not event_data:
-            messages.error(request, "Event not found")
-            return redirect('f1_analysis:qualifying')
             
         event_name = event_data[0]['event_name']
         year = event_data[0]['year']
@@ -110,12 +94,8 @@ def create_qualifying_analysis(request):
             }
             
             analyzer = DBF1QualifyingAnalyzer(db_params)
-            results = analyzer.run_quali_analysis(
-                event_name=event_name,
-                year=year,
-                drivers=[driver1_code, driver2_code],
-                save_to_db=True
-            )
+            
+            results = analyzer.run_quali_analysis(event_name=event_name,year=year, drivers=[driver1_code, driver2_code], save_to_db=True)
             
             if results:
                 analysis_id = None
@@ -132,21 +112,20 @@ def create_qualifying_analysis(request):
                         session_id = session[0]['session_id']
                         
                         recent_analysis = execute_query("""
-                            SELECT a.analysis_id 
-                            FROM analysis a
-                            JOIN race_analysis ra ON a.analysis_id = ra.analysis_id
-                            WHERE a.session_id = %s 
-                            AND ra.drivers_json::jsonb @> %s
-                            ORDER BY a.created_at DESC LIMIT 1
-                        """, [
-                            session_id, 
-                            json.dumps([driver1_code, driver2_code])
-                        ])
+                        SELECT a.analysis_id 
+                        FROM analysis a
+                        JOIN quali_analysis qa ON a.analysis_id = qa.analysis_id
+                        WHERE a.session_id = %s 
+                        AND ((qa.driver1_code = %s AND qa.driver2_code = %s)
+                            OR (qa.driver1_code = %s AND qa.driver2_code = %s))
+                        ORDER BY a.created_at DESC LIMIT 1
+                    """, [
+                        session_id, 
+                        driver1_code, driver2_code,
+                        driver2_code, driver1_code])
                         
                         if recent_analysis:
                             analysis_id = recent_analysis[0]['analysis_id']
-                
-                messages.success(request, f"Qualifying analysis for {driver1_code} vs {driver2_code} at {event_name} {year} created successfully!")
                 
                 redirect_url = reverse('f1_dashboard:qualifying_analysis_view')
                 if analysis_id:
@@ -155,11 +134,13 @@ def create_qualifying_analysis(request):
                     redirect_url += f"?event_id={event_id}"
                     
                 return redirect(redirect_url)
+            
         except Exception as e:
-            messages.error(request, f"Analysis error: {str(e)}")
             return redirect('f1_analysis:qualifying')
     
     return redirect('f1_analysis:qualifying')
+
+#################################################
 
 @team_member_required
 def race_analysis(request):
@@ -222,17 +203,9 @@ def create_race_analysis(request):
             messages.error(request, "All fields are required")
             return redirect('f1_analysis:race')
             
-        if driver1_id == driver2_id:
-            messages.error(request, "Please select two different drivers")
-            return redirect('f1_analysis:race')
-        
         event_data = execute_query("""
             SELECT event_name, year FROM event WHERE event_id = %s
         """, [event_id])
-        
-        if not event_data:
-            messages.error(request, "Event not found")
-            return redirect('f1_analysis:race')
             
         event_name = event_data[0]['event_name']
         year = event_data[0]['year']
@@ -241,7 +214,6 @@ def create_race_analysis(request):
         driver2_data = execute_query("SELECT driver_code FROM driver WHERE driver_id = %s", [driver2_id])
         
         if not driver1_data or not driver2_data:
-            messages.error(request, "One or both drivers not found")
             return redirect('f1_analysis:race')
             
         driver1_code = driver1_data[0]['driver_code']
@@ -257,12 +229,8 @@ def create_race_analysis(request):
             }
             
             analyzer = DBF1RaceAnalyzer(db_params)
-            results = analyzer.run_race_analysis(
-                event_name=event_name,
-                year=year,
-                drivers=[driver1_code, driver2_code],
-                save_to_db=True
-            )
+            
+            results = analyzer.run_race_analysis(event_name=event_name, year=year, drivers=[driver1_code, driver2_code], save_to_db=True)
             
             if results:
                 analysis_id = None
@@ -290,8 +258,6 @@ def create_race_analysis(request):
                         if recent_analysis:
                             analysis_id = recent_analysis[0]['analysis_id']
                 
-                messages.success(request, f"Race analysis for {driver1_code} vs {driver2_code} at {event_name} {year} created successfully!")
-                
                 redirect_url = reverse('f1_dashboard:race_analysis_view')
                 if analysis_id:
                     redirect_url += f"?event_id={event_id}&analysis_id={analysis_id}"
@@ -300,10 +266,8 @@ def create_race_analysis(request):
                     
                 return redirect(redirect_url)
             else:
-                messages.error(request, "Analysis failed. Please check if there is sufficient telemetry data.")
                 return redirect('f1_analysis:race')
         except Exception as e:
-            messages.error(request, f"Analysis error: {str(e)}")
             return redirect('f1_analysis:race')
     
     return redirect('f1_analysis:race')
