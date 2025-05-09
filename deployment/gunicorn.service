@@ -3,14 +3,18 @@ Description=F1 Telemetry Gunicorn Service
 After=network.target
 
 [Service]
-User=f1user
+User=www-data
 Group=www-data
 WorkingDirectory=/var/www/f1telemetry
 Environment="DJANGO_SETTINGS_MODULE=F1_telemetry.settings_production"
 ExecStart=/var/www/f1telemetry/venv/bin/gunicorn \
     --workers 3 \
-    --bind unix:/var/www/f1telemetry/F1_telemetry.sock \
+    --bind unix:/run/gunicorn.sock \
     F1_telemetry.wsgi:application
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target

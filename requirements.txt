@@ -1,8 +1,10 @@
-echo "Django>=4.2.0
-psycopg2-binary>=2.9.6
-gunicorn>=20.1.0
-Pillow>=9.5.0
-numpy>=1.24.3
-pandas>=2.0.1
-matplotlib>=3.7.1
-seaborn>=0.12.2" > /var/www/f1telemetry/requirements.txt
+Django==4.2.0
+psycopg2-binary==2.9.6
+gunicorn==23.0.0
+Pillow==9.5.0
+numpy==1.24.3
+pandas==2.0.1
+matplotlib==3.7.1
+seaborn==0.12.2
+Markdown==3.8
+fastf1==3.5.3

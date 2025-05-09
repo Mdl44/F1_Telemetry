@@ -1,0 +1,15 @@
+{
+    "event": "2024 Brazilian Grand Prix",
+    "year": 2024,
+    "drivers": [
+        "HUL",
+        "OCO"
+    ],
+    "type": "qualifying",
+    "files": {
+        "analysis": "analysis.md",
+        "speed_comparison": "speed_comparison.png",
+        "delta_time": "delta_time.png"
+    },
+    "created_at": "2025-05-08 23:24:36"
+}
