@@ -432,6 +432,8 @@ def qualifying_analysis_view(request):
 
     event_id = request.GET.get('event_id')
     analysis_id = request.GET.get('analysis_id')
+    
+    auto_select = event_id and not analysis_id
 
     events = execute_query("""
                            SELECT DISTINCT e.event_id, e.event_name, e.year, e.event_date
@@ -462,6 +464,10 @@ def qualifying_analysis_view(request):
                                  ORDER BY a.created_at DESC
                                  """, [event_id])
 
+    if auto_select and analyses:
+        first_analysis_id = analyses[0]['analysis_id']
+        return redirect(f"{request.path}?event_id={event_id}&analysis_id={first_analysis_id}")
+    
     if not analysis_id and analyses:
         analysis_id = analyses[0]['analysis_id']
 
@@ -500,6 +506,8 @@ def race_analysis_view(request):
     import json
     event_id = request.GET.get('event_id')
     analysis_id = request.GET.get('analysis_id')
+    
+    auto_select = event_id and not analysis_id
 
     events = execute_query("""
                            SELECT DISTINCT e.event_id, e.event_name, e.year, e.event_date
@@ -532,6 +540,10 @@ def race_analysis_view(request):
                 if len(drivers) >= 2:
                     analysis['driver1_code'] = drivers[0]
                     analysis['driver2_code'] = drivers[1]
+    
+    if auto_select and analyses:
+        first_analysis_id = analyses[0]['analysis_id']
+        return redirect(f"{request.path}?event_id={event_id}&analysis_id={first_analysis_id}")
 
     if not analysis_id and analyses:
         analysis_id = analyses[0]['analysis_id']

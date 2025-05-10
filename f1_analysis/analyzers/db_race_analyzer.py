@@ -179,34 +179,36 @@ class DBF1RaceAnalyzer:
             self.connect()
 
         query = """
-                WITH lap_status AS (SELECT lap_number, \
-                                           track_status, \
-                                           -- Detect status changes \
-                                           LAG(track_status) OVER (ORDER BY lap_number) AS prev_status \
-                                    FROM telemetry t \
-                                             JOIN \
-                                         session s ON t.session_id = s.session_id \
-                                             JOIN \
-                                         event e ON s.event_id = e.event_id \
-                                    WHERE e.event_name LIKE %s \
-                                      AND e.year = %s \
-                                      AND s.session_type = 'R' \
-                                      AND track_status IS NOT NULL \
-                                    GROUP BY lap_number, track_status \
-                                    ORDER BY lap_number)
-                SELECT MIN(lap_number) as start_lap, \
-                       MAX(lap_number) as end_lap
-                FROM (SELECT lap_number,
-                             track_status,
-                             SUM(CASE \
-                                     WHEN track_status = '4' AND (prev_status != '4' OR prev_status IS NULL) THEN 1 \
-                                     ELSE 0 END)
-                             OVER (ORDER BY lap_number) as sc_group \
-                      FROM lap_status) grouped
-                WHERE track_status = '4'
-                GROUP BY sc_group
-                ORDER BY start_lap \
-                """
+        WITH lap_status AS (
+            SELECT 
+                lap_number, 
+                track_status,
+                LAG(track_status) OVER (ORDER BY lap_number) AS prev_status
+            FROM telemetry t
+            JOIN session s ON t.session_id = s.session_id
+            JOIN event e ON s.event_id = e.event_id
+            WHERE e.event_name LIKE %s
+            AND e.year = %s
+            AND s.session_type = 'R'
+            AND track_status IS NOT NULL
+            GROUP BY lap_number, track_status
+            ORDER BY lap_number
+        )
+        SELECT 
+            MIN(lap_number) as start_lap,
+            MAX(lap_number) as end_lap
+        FROM (
+            SELECT 
+                lap_number,
+                track_status,
+                SUM(CASE WHEN track_status = '4' AND (prev_status != '4' OR prev_status IS NULL) THEN 1 ELSE 0 END)
+                OVER (ORDER BY lap_number) as sc_group
+            FROM lap_status
+        ) grouped
+        WHERE track_status = '4'
+        GROUP BY sc_group
+        ORDER BY start_lap
+        """
 
         try:
             conn = self.connect()
@@ -848,18 +850,28 @@ class DBF1RaceAnalyzer:
         print(f"Starting race analysis for {' vs '.join(drivers)} at {event_name} {year}")
 
         if not output_dir:
-            base_path = os.path.join("analysis", "race_analysis", event_name.replace(' ', '_'),
-                                     f"{drivers[0]}_vs_{drivers[1]}")
-        else:
-            base_path = output_dir
-            print(f"Using custom output directory: {base_path}")
-
+            clean_event_name = event_name
+            if clean_event_name.startswith(str(year)):
+                clean_event_name = clean_event_name[len(str(year)):].strip()
+            
+            event_folder = f"{year}_{clean_event_name.replace(' ', '_')}"
+            driver_str = "_vs_".join(sorted(drivers))
+            output_dir = os.path.join("analysis", "files", "race_analysis", event_folder, driver_str)
+        
+        base_path = output_dir
         os.makedirs(base_path, exist_ok=True)
 
         output_file = os.path.join(base_path, "analysis.md")
         lap_times_path = os.path.join(base_path, "pace_comparison.png")
         tire_strategy_path = os.path.join(base_path, "strategy_comparison.png")
         position_path = os.path.join(base_path, "position_changes.png")
+
+        rel_lap_times_path = os.path.join("race_analysis", event_folder, driver_str, "pace_comparison.png")
+        rel_tire_strategy_path = os.path.join("race_analysis", event_folder, driver_str, "strategy_comparison.png")
+        rel_position_path = os.path.join("race_analysis", event_folder, driver_str, "position_changes.png")
+        rel_lap_times_path = rel_lap_times_path.replace('\\', '/')
+        rel_tire_strategy_path = rel_tire_strategy_path.replace('\\', '/')
+        rel_position_path = rel_position_path.replace('\\', '/')
 
         all_laps = {}
         for driver in drivers:
@@ -902,7 +914,7 @@ class DBF1RaceAnalyzer:
         if save_to_db:
             try:
                 self.save_to_database(event_name, year, drivers, insights,
-                                      lap_times_path, tire_strategy_path, position_path, tire_data)
+                      rel_lap_times_path, rel_tire_strategy_path, rel_position_path, tire_data)
             except Exception as e:
                 print(f"Error saving to database: {e}")
 

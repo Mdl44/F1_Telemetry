@@ -13,7 +13,7 @@
         <form method="get" action="{% url 'f1_dashboard:race_analysis_view' %}" class="filter-form">
             <div class="filter-group">
                 <label for="event_id">Event:</label>
-                <select id="event_id" name="event_id" onchange="this.form.submit()">
+                <select id="event_id" name="event_id">
                     {% for event in events %}
                     <option value="{{ event.event_id }}" {% if event.event_id == selected_event %}selected{% endif %}>
                         {{ event.event_name }} {{ event.year }}
@@ -25,7 +25,7 @@
             {% if analyses %}
             <div class="filter-group">
                 <label for="analysis_id">Analysis:</label>
-                <select id="analysis_id" name="analysis_id" onchange="this.form.submit()">
+                <select id="analysis_id" name="analysis_id">
                     {% for analysis in analyses %}
                     <option value="{{ analysis.analysis_id }}" {% if analysis.analysis_id == selected_analysis %}selected{% endif %}>
                         {% if analysis.driver1_code and analysis.driver2_code %}
@@ -56,32 +56,47 @@
 
         <div class="visualization-img-container">
             {% if analysis_details.lap_times_plot_path %}
-                <img src="/{{ analysis_details.lap_times_plot_path }}" alt="Lap Times Plot" class="analysis-image">
+                {% if analysis_details.lap_times_plot_path|slice:":9" == "analysis/" %}
+                    <img src="/{{ analysis_details.lap_times_plot_path }}" alt="Lap Times Plot" class="analysis-image">
+                {% else %}
+                    <img src="/analysis/files/{{ analysis_details.lap_times_plot_path }}" alt="Lap Times Plot" class="analysis-image">
+                {% endif %}
             {% else %}
                 <p>Lap times plot not available</p>
             {% endif %}
         </div>
-        
+
         <div class="visualization-img-container">
             {% if analysis_details.tire_strategy_plot_path %}
-                <img src="/{{ analysis_details.tire_strategy_plot_path }}" alt="Tire Strategy Plot" class="analysis-image">
+                {% if analysis_details.tire_strategy_plot_path|slice:":9" == "analysis/" %}
+                    <img src="/{{ analysis_details.tire_strategy_plot_path }}" alt="Tire Strategy Plot" class="analysis-image">
+                {% else %}
+                    <img src="/analysis/files/{{ analysis_details.tire_strategy_plot_path }}" alt="Tire Strategy Plot" class="analysis-image">
+                {% endif %}
             {% else %}
                 <p>Tire strategy plot not available</p>
             {% endif %}
         </div>
-        
+
         <div class="visualization-img-container">
             {% if analysis_details.position_plot_path %}
-                <img src="/{{ analysis_details.position_plot_path }}" alt="Position Changes Plot" class="analysis-image">
+                {% if analysis_details.position_plot_path|slice:":9" == "analysis/" %}
+                    <img src="/{{ analysis_details.position_plot_path }}" alt="Position Changes Plot" class="analysis-image">
+                {% else %}
+                    <img src="/analysis/files/{{ analysis_details.position_plot_path }}" alt="Position Changes Plot" class="analysis-image">
+                {% endif %}
             {% else %}
                 <p>Position plot not available</p>
             {% endif %}
         </div>
-    </div>
     {% else %}
     <div class="message-container">
         <p class="message">No race analysis available for the selected filters.</p>
     </div>
     {% endif %}
+
+    {% block extra_js %}
+<script src="/static/js/analysis.js"></script>
+{% endblock %}
 </section>
 {% endblock %}

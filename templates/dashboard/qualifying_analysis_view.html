@@ -13,7 +13,7 @@
         <form method="get" action="{% url 'f1_dashboard:qualifying_analysis_view' %}" class="filter-form">
             <div class="filter-group">
                 <label for="event_id">Event:</label>
-                <select id="event_id" name="event_id" onchange="this.form.submit()">
+                <select id="event_id" name="event_id">
                     {% for event in events %}
                     <option value="{{ event.event_id }}" {% if event.event_id == selected_event %}selected{% endif %}>
                         {{ event.event_name }} {{ event.year }}
@@ -24,7 +24,7 @@
 
             <div class="filter-group">
                 <label for="analysis_id">Driver Comparison:</label>
-                <select id="analysis_id" name="analysis_id" onchange="this.form.submit()">
+                <select id="analysis_id" name="analysis_id">
                     {% for analysis in analyses %}
                     <option value="{{ analysis.analysis_id }}" {% if analysis.analysis_id == selected_analysis %}selected{% endif %}>
                         {{ analysis.driver1_code }} vs {{ analysis.driver2_code }}
@@ -48,31 +48,36 @@
             </div>
         </div>
 
-        <div class="visualization">
-            <h4>Delta Time Analysis</h4>
-            <div class="visualization-img-container">
-                {% if analysis_details.delta_plot_path %}
+        <div class="visualization-img-container">
+            {% if analysis_details.delta_plot_path %}
+                {% if analysis_details.delta_plot_path|slice:":9" == "analysis/" %}
                     <img src="/{{ analysis_details.delta_plot_path }}" alt="Delta Plot" class="analysis-image">
                 {% else %}
-                    <p>Delta plot not available</p>
+                    <img src="/analysis/files/{{ analysis_details.delta_plot_path }}" alt="Delta Plot" class="analysis-image">
                 {% endif %}
-            </div>
+            {% else %}
+                <p>Delta plot not available</p>
+            {% endif %}
         </div>
         
-        <div class="visualization">
-            <h4>Speed Comparison</h4>
-            <div class="visualization-img-container">
-                {% if analysis_details.speed_plot_path %}
+        <div class="visualization-img-container">
+            {% if analysis_details.speed_plot_path %}
+                {% if analysis_details.speed_plot_path|slice:":9" == "analysis/" %}
                     <img src="/{{ analysis_details.speed_plot_path }}" alt="Speed Plot" class="analysis-image">
                 {% else %}
-                    <p>Speed plot not available</p>
+                    <img src="/analysis/files/{{ analysis_details.speed_plot_path }}" alt="Speed Plot" class="analysis-image">
                 {% endif %}
-            </div>
+            {% else %}
+                <p>Speed plot not available</p>
+            {% endif %}
         </div>
     {% else %}
     <div class="message-container">
         <p class="message">No qualifying analysis available for the selected filters.</p>
     </div>
     {% endif %}
+    {% block extra_js %}
+<script src="/static/js/analysis.js"></script>
+{% endblock %}
 </section>
 {% endblock %}

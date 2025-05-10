@@ -14,4 +14,4 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     
-    urlpatterns += static('/analysis/', document_root=os.path.join(settings.BASE_DIR, 'analysis'))
+    urlpatterns += static('/analysis/files/', document_root=os.path.join(settings.BASE_DIR, 'analysis'))

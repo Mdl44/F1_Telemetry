@@ -667,20 +667,29 @@ class DBF1QualifyingAnalyzer:
             }
 
         if not output_dir:
-            event_folder = event_name.replace(' ', '_')
+            clean_event_name = event_name
+            if clean_event_name.startswith(str(year)):
+                clean_event_name = clean_event_name[len(str(year)):].strip()
+            
+            event_folder = f"{year}_{clean_event_name.replace(' ', '_')}"
             driver_str = "_vs_".join(sorted(drivers))
-            output_dir = os.path.join("analysis", "quali_analysis", event_folder, driver_str)
+            output_dir = os.path.join("analysis", "files", "quali_analysis", event_folder, driver_str)
 
         print(f"Starting qualifying analysis for {' vs '.join(drivers)} at {event_name} {year}")
 
         base_path = output_dir
-        print(f"Using custom output directory: {base_path}")
-
         os.makedirs(base_path, exist_ok=True)
-
+        
         output_file = os.path.join(base_path, f"analysis.md")
         speed_viz_path = os.path.join(base_path, f"speed_comparison.png")
         delta_viz_path = os.path.join(base_path, f"delta_time.png")
+
+        rel_base_path = os.path.relpath(base_path, 'analysis') if base_path.startswith('analysis/') else base_path
+        rel_speed_viz_path = os.path.join("quali_analysis", event_folder, driver_str, "speed_comparison.png")
+        rel_delta_viz_path = os.path.join("quali_analysis", event_folder, driver_str, "delta_time.png")
+        
+        rel_speed_viz_path = rel_speed_viz_path.replace('\\', '/')
+        rel_delta_viz_path = rel_delta_viz_path.replace('\\', '/')
 
         all_laps = {}
         for driver in drivers:
@@ -708,7 +717,7 @@ class DBF1QualifyingAnalyzer:
 
         if save_to_db:
             try:
-                self.save_to_database(event_name, year, drivers, insights, speed_viz_path, delta_viz_path)
+                self.save_to_database(event_name, year, drivers, insights, rel_speed_viz_path, rel_delta_viz_path)
             except Exception as e:
                 print(f"Error saving to database: {e}")
 
