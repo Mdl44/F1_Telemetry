@@ -26,11 +26,12 @@ rm -rf /var/www/f1telemetry
 ln -sf /www/f1telemetry /var/www/f1telemetry
 
 echo "Cloning repository from GitHub..."
-git clone https://github.com/Mdl44/F1_Telemetry.git /tmp/F1_Telemetry
+rm -rf /tmp/F1_Telemetry_temp
+git clone https://github.com/Mdl44/F1_Telemetry.git /tmp/F1_Telemetry_temp
 
 echo "Copying application files..."
-cp -r /tmp/F1_Telemetry/* /www/f1telemetry/
-rm -rf /tmp/F1_Telemetry
+cp -r /tmp/F1_Telemetry_temp/* /www/f1telemetry/
+rm -rf /tmp/F1_Telemetry_temp
 
 echo "Setting up Python virtual environment..."
 python3 -m venv /www/f1telemetry/venv
