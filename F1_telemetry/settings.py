@@ -10,7 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-from pathlib import Path
+from pathlib import Path #cai fisiere
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -88,10 +88,10 @@ DATABASES = {
     }
 }
 
-AUTH_USER_MODEL = 'f1_users.F1User'
+AUTH_USER_MODEL = 'f1_users.F1User' #backend de auth
 
 AUTHENTICATION_BACKENDS = [
-    'f1_users.auth.F1AuthBackend',
+    'f1_users.auth.F1AuthBackend', #
     'django.contrib.auth.backends.ModelBackend',
 ]
 

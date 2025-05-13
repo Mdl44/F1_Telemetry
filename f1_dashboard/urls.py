@@ -19,4 +19,7 @@ urlpatterns = [
     path('telemetry/create/', views.telemetry_create, name='telemetry_create'),
     path('telemetry/edit/<int:telemetry_id>/', views.telemetry_edit, name='telemetry_edit'),
     path('telemetry/delete/<int:telemetry_id>/', views.telemetry_delete, name='telemetry_delete'),
+    path('reports/data-quality/', views.data_quality_view, name='data_quality'),
+    path('reports/data-quality/event-data/', views.event_data_quality, name='event_data_quality'),
+    path('reports/data-quality/driver-data/', views.driver_data_quality, name='driver_data_quality'),
 ]

@@ -1,6 +1,6 @@
-from django.http import HttpResponseForbidden
-from functools import wraps
-
+from django.http import HttpResponseForbidden #403 forbidden
+from functools import wraps #pastreaza datele meta
+#decoratori pentru controlul accesului la resurse
 def team_member_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):

@@ -1,10 +1,11 @@
+#pentru digital ocean
 import os
 from .settings import *
 
 DEBUG = False
 SECRET_KEY = 'django-insecure-829w_x8$=t_4p$&e#)r(=yz(31$sg0v%risyx#^h*w1)!#-c26'
 
-ALLOWED_HOSTS = ['164.90.168.221', 'localhost', '127.0.0.1'] #schimba
+ALLOWED_HOSTS = ['164.90.168.221', 'localhost', '127.0.0.1']
 
 
 DATABASES = {

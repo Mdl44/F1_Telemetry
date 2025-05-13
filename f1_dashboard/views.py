@@ -4,6 +4,8 @@ from django.db import connection
 from datetime import datetime
 from f1_users.decorators import analyst_required
 from django.urls import reverse
+from django.http import JsonResponse
+from f1_users.decorators import team_member_required
 
 
 def index(request):
@@ -1038,3 +1040,371 @@ def calculate_age(birth_date):
     from datetime import date
     today = date.today()
     return today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+
+
+
+#------------------------------------------#
+@team_member_required
+def data_quality_view(request):
+    events = execute_query("""
+        SELECT e.event_id, e.event_name, e.year, e.circuit_name, e.event_date
+        FROM event e
+        JOIN session s ON e.event_id = s.event_id
+        WHERE EXISTS (
+            SELECT 1 
+            FROM telemetry t 
+            WHERE t.session_id = s.session_id
+        )
+        GROUP BY e.event_id, e.event_name, e.year, e.circuit_name, e.event_date
+        ORDER BY e.year DESC, e.event_date DESC
+    """)
+    
+    context = {
+        'events': events
+    }
+    
+    return render(request, 'dashboard/data_quality.html', context)
+
+
+@team_member_required
+def event_data_quality(request):
+    import math
+    
+    event_id = request.GET.get('event_id')
+    
+    if not event_id:
+        return JsonResponse({'error': 'Event ID is required'}, status=400)
+    
+    event_info = execute_query("""
+        SELECT event_id, event_name, year, circuit_name
+        FROM event
+        WHERE event_id = %s
+    """, [event_id])
+    
+    if not event_info:
+        return JsonResponse({'error': 'Event not found'}, status=404)
+    
+    overall_stats = execute_query("""
+        SELECT 
+            COUNT(*) as total_data_points,
+            SUM(CASE 
+                WHEN (speed IS NULL OR speed::text = 'NaN' OR
+                     throttle IS NULL OR throttle::text = 'NaN' OR
+                     brake IS NULL OR
+                     rpm IS NULL OR rpm::text = 'NaN' OR
+                     drs IS NULL OR
+                     lap_number IS NULL OR lap_number::text = 'NaN' OR
+                     lap_time IS NULL OR lap_time = 'No time' OR
+                     position IS NULL OR
+                     tire_compound IS NULL OR tire_compound = '' OR
+                     tyre_life IS NULL OR tyre_life::text = 'NaN' OR
+                     sector1_time IS NULL OR sector1_time::text = 'NaN' OR
+                     sector2_time IS NULL OR sector2_time::text = 'NaN' OR
+                     sector3_time IS NULL OR sector3_time::text = 'NaN')
+                THEN 0 ELSE 1 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as valid_data_pct,
+            
+            SUM(CASE WHEN speed IS NULL OR speed::text = 'NaN' THEN 0 ELSE 1 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as speed_complete_pct,
+            SUM(CASE WHEN throttle IS NULL OR throttle::text = 'NaN' THEN 0 ELSE 1 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as throttle_complete_pct,
+            SUM(CASE WHEN brake IS NULL THEN 0 ELSE 1 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as brake_complete_pct,
+            SUM(CASE WHEN rpm IS NULL OR rpm::text = 'NaN' THEN 0 ELSE 1 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as rpm_complete_pct,
+            SUM(CASE WHEN drs IS NULL THEN 0 ELSE 1 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as drs_complete_pct,
+            SUM(CASE WHEN lap_number IS NULL OR lap_number::text = 'NaN' THEN 0 ELSE 1 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as lap_number_complete_pct,
+            SUM(CASE WHEN lap_time IS NULL OR lap_time = 'No time' THEN 0 ELSE 1 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as lap_time_complete_pct,
+            SUM(CASE WHEN position IS NULL THEN 0 ELSE 1 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as position_complete_pct,
+            SUM(CASE WHEN tire_compound IS NULL OR tire_compound = '' THEN 0 ELSE 1 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as tire_compound_complete_pct,
+            SUM(CASE WHEN tyre_life IS NULL OR tyre_life::text = 'NaN' THEN 0 ELSE 1 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as tyre_life_complete_pct,
+            SUM(CASE WHEN sector1_time IS NULL OR sector1_time::text = 'NaN' THEN 0 ELSE 1 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as sector1_complete_pct,
+            SUM(CASE WHEN sector2_time IS NULL OR sector2_time::text = 'NaN' THEN 0 ELSE 1 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as sector2_complete_pct,
+            SUM(CASE WHEN sector3_time IS NULL OR sector3_time::text = 'NaN' THEN 0 ELSE 1 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as sector3_complete_pct
+        FROM telemetry t
+        JOIN session s ON t.session_id = s.session_id
+        WHERE s.event_id = %s
+    """, [event_id])
+    
+    if not overall_stats or overall_stats[0]['total_data_points'] == 0:
+        return JsonResponse({'error': 'No telemetry data found for this event'}, status=404)
+    
+    stats = overall_stats[0]
+    all_metrics = [
+        'valid_data_pct', 'speed_complete_pct', 'throttle_complete_pct', 'brake_complete_pct', 
+        'rpm_complete_pct', 'drs_complete_pct', 'lap_number_complete_pct', 
+        'lap_time_complete_pct', 'position_complete_pct', 
+        'tire_compound_complete_pct', 'tyre_life_complete_pct',
+        'sector1_complete_pct', 'sector2_complete_pct', 'sector3_complete_pct'
+    ]
+    
+    for key in all_metrics:
+        if key in stats and (stats[key] is None or (isinstance(stats[key], float) and math.isnan(stats[key]))):
+            stats[key] = 0
+    
+    driver_stats = execute_query("""
+        SELECT 
+            d.driver_id,
+            d.driver_code,
+            COUNT(*) as total_points,
+            SUM(CASE 
+                WHEN (t.speed IS NULL OR t.speed::text = 'NaN' OR
+                     t.throttle IS NULL OR t.throttle::text = 'NaN' OR
+                     t.brake IS NULL OR
+                     t.rpm IS NULL OR t.rpm::text = 'NaN' OR
+                     t.drs IS NULL OR
+                     t.lap_number IS NULL OR t.lap_number::text = 'NaN' OR
+                     t.lap_time IS NULL OR t.lap_time = 'No time' OR
+                     t.position IS NULL OR
+                     t.tire_compound IS NULL OR t.tire_compound = '' OR
+                     t.tyre_life IS NULL OR t.tyre_life::text = 'NaN' OR
+                     t.sector1_time IS NULL OR t.sector1_time::text = 'NaN' OR
+                     t.sector2_time IS NULL OR t.sector2_time::text = 'NaN' OR
+                     t.sector3_time IS NULL OR t.sector3_time::text = 'NaN')
+                THEN 0 ELSE 1 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as valid_data_pct,
+            
+            SUM(CASE WHEN t.speed IS NULL OR t.speed::text = 'NaN' THEN 0 ELSE 1 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as speed_complete_pct,
+            SUM(CASE WHEN t.throttle IS NULL OR t.throttle::text = 'NaN' THEN 0 ELSE 1 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as throttle_complete_pct,
+            SUM(CASE WHEN t.brake IS NULL THEN 0 ELSE 1 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as brake_complete_pct,
+            SUM(CASE WHEN t.rpm IS NULL OR t.rpm::text = 'NaN' THEN 0 ELSE 1 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as rpm_complete_pct,
+            COUNT(DISTINCT CASE WHEN t.lap_number IS NOT NULL AND t.lap_number::text != 'NaN' THEN t.lap_number END) as lap_count,
+            MAX(CASE WHEN t.lap_number::text != 'NaN' THEN t.lap_number END) as max_lap
+        FROM telemetry t
+        JOIN session s ON t.session_id = s.session_id
+        JOIN driver d ON t.driver_id = d.driver_id
+        WHERE s.event_id = %s
+        GROUP BY d.driver_id, d.driver_code
+        ORDER BY d.driver_code
+    """, [event_id])
+    
+    for driver in driver_stats:
+        if 'valid_data_pct' in driver and (driver['valid_data_pct'] is None or 
+                                          (isinstance(driver['valid_data_pct'], float) and math.isnan(driver['valid_data_pct']))):
+            driver['valid_data_pct'] = 0
+        
+        driver['usable_data_percentage'] = round(driver.get('valid_data_pct', 0), 2)
+        driver['erroneous_data_percentage'] = round(100 - driver['usable_data_percentage'], 2)
+        
+        max_lap = driver.get('max_lap')
+        lap_count = driver.get('lap_count', 0) or 0
+        
+        if max_lap is None or (isinstance(max_lap, float) and math.isnan(max_lap)):
+            driver['max_lap'] = None
+            driver['incomplete_laps'] = 0
+        else:
+            driver['incomplete_laps'] = max(0, max_lap - lap_count)
+    
+    return JsonResponse({
+        'event': event_info[0],
+        'overall_stats': {
+            'total_data_points': stats['total_data_points'],
+            'usable_data_percentage': round(stats['valid_data_pct'], 2),
+            'erroneous_data_percentage': round(100 - stats['valid_data_pct'], 2),
+            'metrics': {
+                'speed': round(stats['speed_complete_pct'], 2),
+                'throttle': round(stats['throttle_complete_pct'], 2),
+                'brake': round(stats['brake_complete_pct'], 2),
+                'rpm': round(stats['rpm_complete_pct'], 2),
+                'drs': round(stats['drs_complete_pct'], 2),
+                'lap_number': round(stats['lap_number_complete_pct'], 2),
+                'lap_time': round(stats['lap_time_complete_pct'], 2),
+                'position': round(stats['position_complete_pct'], 2),
+                'tire_compound': round(stats['tire_compound_complete_pct'], 2),
+                'tyre_life': round(stats['tyre_life_complete_pct'], 2),
+                'sector1': round(stats['sector1_complete_pct'], 2),
+                'sector2': round(stats['sector2_complete_pct'], 2),
+                'sector3': round(stats['sector3_complete_pct'], 2)
+            }
+        },
+        'drivers': driver_stats
+    })
+
+@team_member_required
+def driver_data_quality(request):
+    """API endpoint pentru datele de calitate la nivel de pilot"""
+    import math
+    
+    event_id = request.GET.get('event_id')
+    driver_id = request.GET.get('driver_id')
+    
+    if not event_id or not driver_id:
+        return JsonResponse({'error': 'Event ID and Driver ID are required'}, status=400)
+    
+    event_info = execute_query("""
+        SELECT event_id, event_name, year, circuit_name
+        FROM event
+        WHERE event_id = %s
+    """, [event_id])
+    
+    driver_info = execute_query("""
+        SELECT driver_id, driver_code, first_name || ' ' || last_name as full_name
+        FROM driver
+        WHERE driver_id = %s
+    """, [driver_id])
+    
+    if not event_info or not driver_info:
+        return JsonResponse({'error': 'Event or driver not found'}, status=404)
+    
+    detailed_stats = execute_query("""
+        SELECT 
+            COUNT(*) as total_points,
+            SUM(CASE 
+                WHEN (speed IS NULL OR speed::text = 'NaN' OR
+                     throttle IS NULL OR throttle::text = 'NaN' OR
+                     brake IS NULL OR
+                     rpm IS NULL OR rpm::text = 'NaN' OR
+                     drs IS NULL OR
+                     lap_number IS NULL OR lap_number::text = 'NaN' OR
+                     lap_time IS NULL OR lap_time = 'No time' OR
+                     position IS NULL OR
+                     tire_compound IS NULL OR tire_compound = '' OR
+                     tyre_life IS NULL OR tyre_life::text = 'NaN' OR
+                     sector1_time IS NULL OR sector1_time::text = 'NaN' OR
+                     sector2_time IS NULL OR sector2_time::text = 'NaN' OR
+                     sector3_time IS NULL OR sector3_time::text = 'NaN')
+                THEN 0 ELSE 1 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as valid_data_pct,
+            
+            SUM(CASE WHEN speed IS NULL OR speed::text = 'NaN' THEN 1 ELSE 0 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as null_speed_pct,
+            SUM(CASE WHEN throttle IS NULL OR throttle::text = 'NaN' THEN 1 ELSE 0 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as null_throttle_pct,
+            SUM(CASE WHEN brake IS NULL THEN 1 ELSE 0 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as null_brake_pct,
+            SUM(CASE WHEN rpm IS NULL OR rpm::text = 'NaN' THEN 1 ELSE 0 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as null_rpm_pct,
+            SUM(CASE WHEN drs IS NULL THEN 1 ELSE 0 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as null_drs_pct,
+            SUM(CASE WHEN lap_time IS NULL OR lap_time = 'No time' THEN 1 ELSE 0 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as null_lap_time_pct,
+            SUM(CASE WHEN lap_number IS NULL OR lap_number::text = 'NaN' THEN 1 ELSE 0 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as null_lap_number_pct,
+            SUM(CASE WHEN position IS NULL THEN 1 ELSE 0 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as null_position_pct,
+            SUM(CASE WHEN tire_compound IS NULL OR tire_compound = '' THEN 1 ELSE 0 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as null_tire_compound_pct,
+            SUM(CASE WHEN tyre_life IS NULL OR tyre_life::text = 'NaN' THEN 1 ELSE 0 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as null_tyre_life_pct,
+            SUM(CASE WHEN sector1_time IS NULL OR sector1_time::text = 'NaN' THEN 1 ELSE 0 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as null_sector1_pct,
+            SUM(CASE WHEN sector2_time IS NULL OR sector2_time::text = 'NaN' THEN 1 ELSE 0 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as null_sector2_pct,
+            SUM(CASE WHEN sector3_time IS NULL OR sector3_time::text = 'NaN' THEN 1 ELSE 0 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as null_sector3_pct,
+            COUNT(DISTINCT CASE WHEN lap_number IS NOT NULL AND lap_number::text != 'NaN' THEN lap_number END) as lap_count,
+            MAX(CASE WHEN lap_number::text != 'NaN' THEN lap_number END) as max_lap
+        FROM telemetry t
+        JOIN session s ON t.session_id = s.session_id
+        WHERE s.event_id = %s AND t.driver_id = %s
+    """, [event_id, driver_id])
+    
+    if not detailed_stats or detailed_stats[0]['total_points'] == 0:
+        return JsonResponse({'error': 'No telemetry data found for this driver in this event'}, status=404)
+    
+    session_stats = execute_query("""
+        SELECT 
+            s.session_id,
+            s.session_type,
+            COUNT(*) as total_points,
+            SUM(CASE 
+                WHEN (t.speed IS NULL OR t.speed::text = 'NaN' OR
+                     t.throttle IS NULL OR t.throttle::text = 'NaN' OR
+                     t.brake IS NULL OR
+                     t.rpm IS NULL OR t.rpm::text = 'NaN' OR
+                     t.drs IS NULL OR
+                     t.lap_number IS NULL OR t.lap_number::text = 'NaN' OR
+                     t.lap_time IS NULL OR t.lap_time = 'No time' OR
+                     t.position IS NULL OR
+                     t.tire_compound IS NULL OR t.tire_compound = '' OR
+                     t.tyre_life IS NULL OR t.tyre_life::text = 'NaN' OR
+                     t.sector1_time IS NULL OR t.sector1_time::text = 'NaN' OR
+                     t.sector2_time IS NULL OR t.sector2_time::text = 'NaN' OR
+                     t.sector3_time IS NULL OR t.sector3_time::text = 'NaN')
+                THEN 0 ELSE 1 END) * 100.0 / 
+                NULLIF(COUNT(*), 0) as valid_data_pct,
+            COUNT(DISTINCT CASE WHEN t.lap_number IS NOT NULL AND t.lap_number::text != 'NaN' THEN t.lap_number END) as lap_count
+        FROM telemetry t
+        JOIN session s ON t.session_id = s.session_id
+        WHERE s.event_id = %s AND t.driver_id = %s
+        GROUP BY s.session_id, s.session_type
+    """, [event_id, driver_id])
+    
+    if 'valid_data_pct' in detailed_stats[0] and (detailed_stats[0]['valid_data_pct'] is None or 
+                                               (isinstance(detailed_stats[0]['valid_data_pct'], float) and 
+                                                math.isnan(detailed_stats[0]['valid_data_pct']))):
+        detailed_stats[0]['valid_data_pct'] = 0
+        
+    metrics = [
+        {'name': 'Speed', 'usable_percentage': round(100 - detailed_stats[0]['null_speed_pct'], 2), 
+         'error_percentage': round(detailed_stats[0]['null_speed_pct'], 2)},
+        {'name': 'Throttle', 'usable_percentage': round(100 - detailed_stats[0]['null_throttle_pct'], 2), 
+         'error_percentage': round(detailed_stats[0]['null_throttle_pct'], 2)},
+        {'name': 'Brake', 'usable_percentage': round(100 - detailed_stats[0]['null_brake_pct'], 2), 
+         'error_percentage': round(detailed_stats[0]['null_brake_pct'], 2)},
+        {'name': 'RPM', 'usable_percentage': round(100 - detailed_stats[0]['null_rpm_pct'], 2), 
+         'error_percentage': round(detailed_stats[0]['null_rpm_pct'], 2)},
+        {'name': 'DRS', 'usable_percentage': round(100 - detailed_stats[0]['null_drs_pct'], 2), 
+         'error_percentage': round(detailed_stats[0]['null_drs_pct'], 2)},
+        {'name': 'Lap Time', 'usable_percentage': round(100 - detailed_stats[0]['null_lap_time_pct'], 2), 
+         'error_percentage': round(detailed_stats[0]['null_lap_time_pct'], 2)},
+        {'name': 'Lap Number', 'usable_percentage': round(100 - detailed_stats[0]['null_lap_number_pct'], 2), 
+         'error_percentage': round(detailed_stats[0]['null_lap_number_pct'], 2)},
+        {'name': 'Position', 'usable_percentage': round(100 - detailed_stats[0]['null_position_pct'], 2), 
+         'error_percentage': round(detailed_stats[0]['null_position_pct'], 2)},
+        {'name': 'Tire Compound', 'usable_percentage': round(100 - detailed_stats[0]['null_tire_compound_pct'], 2), 
+         'error_percentage': round(detailed_stats[0]['null_tire_compound_pct'], 2)},
+        {'name': 'Tire Life', 'usable_percentage': round(100 - detailed_stats[0]['null_tyre_life_pct'], 2), 
+         'error_percentage': round(detailed_stats[0]['null_tyre_life_pct'], 2)},
+        {'name': 'Sector 1', 'usable_percentage': round(100 - detailed_stats[0]['null_sector1_pct'], 2), 
+         'error_percentage': round(detailed_stats[0]['null_sector1_pct'], 2)},
+        {'name': 'Sector 2', 'usable_percentage': round(100 - detailed_stats[0]['null_sector2_pct'], 2), 
+         'error_percentage': round(detailed_stats[0]['null_sector2_pct'], 2)},
+        {'name': 'Sector 3', 'usable_percentage': round(100 - detailed_stats[0]['null_sector3_pct'], 2), 
+         'error_percentage': round(detailed_stats[0]['null_sector3_pct'], 2)},
+    ]
+    
+    for session in session_stats:
+        if session['session_type'] == 'Q':
+            session['display_type'] = 'Qualifying'
+        elif session['session_type'] == 'R':
+            session['display_type'] = 'Race'
+        else:
+            session['display_type'] = 'Practice'
+            
+        if 'valid_data_pct' in session and (session['valid_data_pct'] is None or 
+                                         (isinstance(session['valid_data_pct'], float) and 
+                                          math.isnan(session['valid_data_pct']))):
+            session['valid_data_pct'] = 0
+            
+        session['usable_percentage'] = round(session['valid_data_pct'], 2)
+        session['error_percentage'] = round(100 - session['valid_data_pct'], 2)
+    
+    incomplete_laps = max(0, detailed_stats[0]['max_lap'] - detailed_stats[0]['lap_count']) if detailed_stats[0]['max_lap'] else 0
+    
+    return JsonResponse({
+        'event': event_info[0],
+        'driver': driver_info[0],
+        'overall_stats': {
+            'total_points': detailed_stats[0]['total_points'],
+            'usable_percentage': round(detailed_stats[0]['valid_data_pct'], 2),
+            'error_percentage': round(100 - detailed_stats[0]['valid_data_pct'], 2),
+            'lap_count': detailed_stats[0]['lap_count'],
+            'incomplete_laps': incomplete_laps
+        },
+        'metrics': metrics,
+        'sessions': session_stats
+    })

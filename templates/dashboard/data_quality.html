@@ -1,0 +1,457 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+{% endblock %}
+
+{% block title %}Data Quality Reports - F1 Telemetry{% endblock %}
+
+{% block content %}
+<div class="quality-dashboard">
+    <h2>Data Quality Reports</h2>
+    <p>Analyze the quality and completeness of telemetry data</p>
+    
+    <div class="report-selection">
+        <h3>Generate Report</h3>
+        <p>Select an event to analyze data quality:</p>
+        
+        <div class="filter-row">
+            <div class="filter-group">
+                <label for="event-selector">Event:</label>
+                <select id="event-selector">
+                    <option value="">-- Select Event --</option>
+                    {% for event in events %}
+                    <option value="{{ event.event_id }}">{{ event.event_name }} {{ event.year }} ({{ event.circuit_name }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="driver-selector">Driver (Optional):</label>
+                <select id="driver-selector" disabled>
+                    <option value="">-- Select Driver --</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="button-row">
+            <button id="event-report-btn" class="btn" disabled>Generate Event Report</button>
+            <button id="driver-report-btn" class="btn btn-secondary" disabled>Generate Driver Report</button>
+        </div>
+    </div>
+    
+    <div id="report-container" class="report-container">
+        <div class="report-header">
+            <h3 id="report-title">Data Quality Report</h3>
+            <p id="report-subtitle">Analyzing data quality for selected event</p>
+        </div>
+        
+        <div class="report-metrics">
+            <div class="metric-card">
+                <div id="total-points" class="metric-value">0</div>
+                <div class="metric-label">Total Data Points</div>
+            </div>
+            
+            <div class="metric-card">
+                <div id="usable-pct" class="metric-value">0%</div>
+                <div class="metric-label">Usable Data</div>
+            </div>
+            
+            <div class="metric-card">
+                <div id="error-pct" class="metric-value">0%</div>
+                <div class="metric-label">Missing/Invalid Data</div>
+            </div>
+            
+            <div id="driver-metric" class="metric-card" style="display: none;">
+                <div id="lap-count" class="metric-value">0</div>
+                <div class="metric-label">Completed Laps</div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <canvas id="metrics-chart"></canvas>
+        </div>
+        
+        <div id="driver-details" class="driver-details" style="display: none;">
+            <h3>Driver Data Details</h3>
+            <div class="chart-container">
+                <canvas id="driver-metrics-chart"></canvas>
+            </div>
+        </div>
+        
+        <div id="event-details" class="driver-details">
+            <h3>Data Quality by Driver</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Driver</th>
+                        <th>Data Points</th>
+                        <th>Usable Data %</th>
+                        <th>Complete Laps</th>
+                        <th>Incomplete Laps</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="driver-table-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const eventSelector = document.getElementById('event-selector');
+        const driverSelector = document.getElementById('driver-selector');
+        const eventReportBtn = document.getElementById('event-report-btn');
+        const driverReportBtn = document.getElementById('driver-report-btn');
+        const reportContainer = document.getElementById('report-container');
+        const driverDetails = document.getElementById('driver-details');
+        const eventDetails = document.getElementById('event-details');
+        const driverMetric = document.getElementById('driver-metric');
+        
+        let metricsChart = null;
+        let driverMetricsChart = null;
+        
+        eventSelector.addEventListener('change', function() {
+            const eventId = this.value;
+            
+            if (eventId) {
+                eventReportBtn.disabled = false;
+                
+                fetch(`{% url 'f1_dashboard:event_data_quality' %}?event_id=${eventId}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            console.error('Response status:', response.status);
+                            return response.json().then(data => {
+                                throw new Error(data.error || 'Network response was not ok');
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        driverSelector.innerHTML = '<option value="">-- Select Driver --</option>';
+                        
+                        if (data.drivers && data.drivers.length > 0) {
+                            data.drivers.forEach(driver => {
+                                const option = document.createElement('option');
+                                option.value = driver.driver_id;
+                                option.textContent = driver.driver_code;
+                                driverSelector.appendChild(option);
+                            });
+                            
+                            driverSelector.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching event data:', error);
+                        alert('Error loading event data: ' + error.message);
+                    });
+            } else {
+                eventReportBtn.disabled = true;
+                driverSelector.disabled = true;
+                driverSelector.innerHTML = '<option value="">-- Select Driver --</option>';
+                driverReportBtn.disabled = true;
+            }
+        });
+        
+        driverSelector.addEventListener('change', function() {
+            driverReportBtn.disabled = !this.value;
+        });
+        
+        eventReportBtn.addEventListener('click', function() {
+            const eventId = eventSelector.value;
+            
+            if (eventId) {
+                fetch(`{% url 'f1_dashboard:event_data_quality' %}?event_id=${eventId}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(data => {
+                                throw new Error(data.error || 'Network response was not ok');
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        displayEventReport(data);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching event data:', error);
+                        alert('Error loading event data: ' + error.message);
+                    });
+            }
+        });
+        
+        driverReportBtn.addEventListener('click', function() {
+            const eventId = eventSelector.value;
+            const driverId = driverSelector.value;
+            
+            if (eventId && driverId) {
+                fetch(`{% url 'f1_dashboard:driver_data_quality' %}?event_id=${eventId}&driver_id=${driverId}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(data => {
+                                throw new Error(data.error || 'Network response was not ok');
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        displayDriverReport(data);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching driver data:', error);
+                        alert('Error loading driver data: ' + error.message);
+                    });
+            }
+        });
+        
+        function displayEventReport(data) {
+            document.getElementById('report-title').textContent = 
+                `Data Quality: ${data.event.event_name} ${data.event.year}`;
+            document.getElementById('report-subtitle').textContent = 
+                `Circuit: ${data.event.circuit_name}`;
+            
+            document.getElementById('total-points').textContent = 
+                data.overall_stats.total_data_points.toLocaleString();
+            document.getElementById('usable-pct').textContent = 
+                `${data.overall_stats.usable_data_percentage}%`;
+            document.getElementById('error-pct').textContent = 
+                `${data.overall_stats.erroneous_data_percentage}%`;
+            
+            driverMetric.style.display = 'none';
+            reportContainer.style.display = 'block';
+            driverDetails.style.display = 'none';
+            eventDetails.style.display = 'block';
+            
+            renderMetricsChart(data);
+            populateDriverTable(data.drivers);
+        }
+        
+        function displayDriverReport(data) {
+            document.getElementById('report-title').textContent = 
+                `Driver Data Quality: ${data.driver.driver_code}`;
+            document.getElementById('report-subtitle').textContent = 
+                `${data.event.event_name} ${data.event.year} - ${data.event.circuit_name}`;
+            
+            document.getElementById('total-points').textContent = 
+                data.overall_stats.total_points.toLocaleString();
+            document.getElementById('usable-pct').textContent = 
+                `${data.overall_stats.usable_percentage}%`;
+            document.getElementById('error-pct').textContent = 
+                `${data.overall_stats.error_percentage}%`;
+            
+            document.getElementById('lap-count').textContent = 
+                `${data.overall_stats.lap_count}`;
+            
+            driverMetric.style.display = 'block';
+            reportContainer.style.display = 'block';
+            driverDetails.style.display = 'block';
+            eventDetails.style.display = 'none';
+            
+            renderDriverMetricsChart(data.metrics);
+        }
+        
+        function renderMetricsChart(data) {
+            const ctx = document.getElementById('metrics-chart').getContext('2d');
+            
+            if (metricsChart) {
+                metricsChart.destroy();
+            }
+            
+            console.log("Metrics data:", data.overall_stats.metrics);
+            
+            const metrics = data.overall_stats.metrics;
+            const labels = Object.keys(metrics);
+            
+            const values = labels.map(key => {
+                const val = metrics[key];
+                return (val === null || isNaN(val)) ? 0 : val;
+            });
+            
+            const missingValues = values.map(v => 100 - v);
+            
+            console.log("Processed values:", values);
+            console.log("Missing values:", missingValues);
+            
+            metricsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels.map(l => l.charAt(0).toUpperCase() + l.slice(1)),
+                    datasets: [
+                        {
+                            label: 'Complete Data (%)',
+                            data: values,
+                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                            borderColor: 'rgba(16, 185, 129, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Missing Data (%)',
+                            data: missingValues,
+                            backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                            borderColor: 'rgba(239, 68, 68, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Percentage (%)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Telemetry Metrics'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Data Completeness by Metric Type'
+                        },
+                        legend: {
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+        
+        function renderDriverMetricsChart(metrics) {
+            const ctx = document.getElementById('driver-metrics-chart').getContext('2d');
+            
+            if (driverMetricsChart) {
+                driverMetricsChart.destroy();
+            }
+            
+            console.log("Driver metrics data:", metrics);
+            
+            const labels = metrics.map(m => m.name);
+            const usableData = metrics.map(m => {
+                const val = m.usable_percentage;
+                return (val === null || isNaN(val)) ? 0 : val;
+            });
+            const errorData = metrics.map(m => {
+                const val = m.error_percentage;
+                return (val === null || isNaN(val)) ? 0 : val;
+            });
+            
+            console.log("Processed usable data:", usableData);
+            console.log("Processed error data:", errorData);
+            
+            driverMetricsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Usable Data (%)',
+                            data: usableData,
+                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                            borderColor: 'rgba(16, 185, 129, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Missing Data (%)',
+                            data: errorData,
+                            backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                            borderColor: 'rgba(239, 68, 68, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Percentage (%)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Metric'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Driver Data Quality by Metric Type'
+                        },
+                        legend: {
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+        
+        function populateDriverTable(drivers) {
+            const tableBody = document.getElementById('driver-table-body');
+            tableBody.innerHTML = '';
+            
+            drivers.forEach(driver => {
+                const row = document.createElement('tr');
+                
+                const codeCell = document.createElement('td');
+                codeCell.textContent = driver.driver_code;
+                
+                const pointsCell = document.createElement('td');
+                pointsCell.textContent = driver.total_points.toLocaleString();
+                
+                const usableCell = document.createElement('td');
+                usableCell.textContent = `${driver.usable_data_percentage}%`;
+                
+                const lapsCell = document.createElement('td');
+                lapsCell.textContent = driver.lap_count;
+                
+                const incompleteLapsCell = document.createElement('td');
+                incompleteLapsCell.textContent = driver.incomplete_laps;
+                
+                const actionsCell = document.createElement('td');
+                const viewButton = document.createElement('button');
+                viewButton.textContent = 'View Details';
+                viewButton.className = 'btn btn-secondary';
+                viewButton.style.padding = '0.5rem 1rem';
+                viewButton.style.fontSize = '14px';
+                viewButton.addEventListener('click', function() {
+                    driverSelector.value = driver.driver_id;
+                    driverReportBtn.disabled = false;
+                    driverReportBtn.click();
+                });
+                actionsCell.appendChild(viewButton);
+                
+                row.appendChild(codeCell);
+                row.appendChild(pointsCell);
+                row.appendChild(usableCell);
+                row.appendChild(lapsCell);
+                row.appendChild(incompleteLapsCell);
+                row.appendChild(actionsCell);
+                
+                tableBody.appendChild(row);
+            });
+        }
+    });
+</script>
+{% endblock %}
