@@ -37,6 +37,7 @@ class DBF1QualifyingAnalyzer:
         }
 
     def get_driver_styling(self, drivers, year):
+        #stiluri diferite de stilizare in contextul graficelor
         if not self.conn:
             self.connect()
 
@@ -98,6 +99,7 @@ class DBF1QualifyingAnalyzer:
             return None
 
     def connect(self):
+        #conectarea la baza de date
         self.conn = psycopg2.connect(
             host=self.db_params['host'],
             database=self.db_params['database'],
